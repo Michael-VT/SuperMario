@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Супер Марио</title>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    background: radial-gradient(circle at 50% 0%, #24344a 0%, #101821 70%);
+    color: #e9f1f8;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+  }
+
+  body { display: flex; justify-content: center; padding: 18px; }
+
+  .app {
+    display: flex; gap: 18px; align-items: flex-start;
+    flex-wrap: wrap; justify-content: center;
+  }
+
+  .left-col { display: flex; flex-direction: column; gap: 10px; }
+
+  canvas {
+    display: block; border-radius: 12px;
+    box-shadow: 0 12px 34px rgba(0,0,0,.55);
+    background: #87ceeb; max-width: 100%; height: auto;
+    touch-action: none;
+  }
+
+  .hud { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 14px; }
+  .hud .chip {
+    background: #1e2b3c; border: 1px solid #2f4258; border-radius: 999px;
+    padding: 6px 14px; font-weight: 600;
+  }
+  .hud .chip b { color: #ffd166; }
+
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .controls button {
+    flex: 1 1 0; min-width: 104px; padding: 12px 8px; font-size: 14px;
+    font-weight: 700; color: #0f1720;
+    background: linear-gradient(#ffd166, #f0a500);
+    border: none; border-bottom: 4px solid #b87d00; border-radius: 10px;
+    cursor: pointer; user-select: none; -webkit-user-select: none;
+    touch-action: none; transition: transform .06s, filter .12s;
+  }
+  .controls button:active,
+  .controls button.pressed {
+    transform: translateY(2px); border-bottom-width: 2px; filter: brightness(.92);
+  }
+  .controls button.primary {
+    background: linear-gradient(#7ee787, #2ea043);
+    border-bottom-color: #1b6b2c; color: #06210c;
+  }
+  .controls button.danger {
+    background: linear-gradient(#ff9a9a, #e03131);
+    border-bottom-color: #9b1c1c; color: #2a0505;
+  }
+
+  .status { min-height: 22px; font-size: 14px; color: #9fb6cc; padding-left: 4px; }
+
+  .panel {
+    width: 340px; max-width: 100%; background: #16202c;
+    border: 1px solid #26374a; border-radius: 14px; padding: 16px;
+    box-shadow: 0 12px 34px rgba(0,0,0,.45);
+  }
+
+  .panel h2 { margin: 14px 0 10px; font-size: 16px; }
+  .panel h3 { margin: 16px 0 8px; font-size: 14px; color: #9fb6cc; }
+
+  .score-box {
+    background: linear-gradient(135deg, #1f3550, #16283c);
+    border: 1px solid #2c4a6b; border-radius: 12px;
+    padding: 12px; text-align: center;
+  }
+  .score-label { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #8fa7bd; }
+  .score-value { font-size: 42px; font-weight: 800; color: #ffd166; line-height: 1.05; }
+  .score-sub { font-size: 13px; color: #9fb6cc; margin-top: 4px; }
+  .score-sub b { color: #e9f1f8; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #22303f; }
+  th {
+    color: #8fa7bd; font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  tbody tr:nth-child(1) td { color: #ffd166; font-weight: 700; }
+  tbody tr:nth-child(2) td { color: #dbe4ee; font-weight: 600; }
+  tbody tr:nth-child(3) td { color: #d8a56b; font-weight: 600; }
+  .empty { color: #6b8098; font-style: italic; }
+
+  ul.recent { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+  ul.recent li {
+    display: flex; justify-content: space-between; gap: 10px;
+    padding: 5px 8px; border-bottom: 1px dashed #22303f;
+  }
+  ul.recent li .rs { color: #ffd166; font-weight: 700; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: #9fb6cc; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  /* ---------- модальное окно ---------- */
+  .modal {
+    position: fixed; inset: 0; background: rgba(6,10,16,.84);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 50; padding: 16px;
+  }
+  .modal.hidden { display: none; }
+  .modal-box {
+    background: #16202c; border: 1px solid #2c4a6b; border-radius: 16px;
+    padding: 24px; width: min(620px, 100%); max-height: 90vh;
+    overflow: auto; box-shadow: 0 24px 60px rgba(0,0,0,.6);
+  }
+  .modal-box h2 { margin: 0 0 10px; font-size: 22px; }
+  .modal-box p { margin: 0 0 12px; color: #b9cbdd; font-size: 14px; }
+  .modal-box input {
+    width: 100%; padding: 12px 14px; font-size: 16px; border-radius: 10px;
+    border: 1px solid #2f4258; background: #101821; color: #e9f1f8; outline: none;
+  }
+  .modal-box input:focus { border-color: #4d7fb5; }
+  .modal-actions { margin-top: 18px; display: flex; justify-content: flex-end; gap: 10px; }
+  .modal-actions button {
+    padding: 12px 26px; font-size: 15px; font-weight: 700;
+    border: none; border-radius: 10px; cursor: pointer; color: #06210c;
+    background: linear-gradient(#7ee787, #2ea043);
+    border-bottom: 4px solid #1b6b2c;
+  }
+  .modal-actions button:active { transform: translateY(2px); border-bottom-width: 2px; }
+  .modal-actions button.ghost {
+    background: linear-gradient(#8fa7bd, #5b7691);
+    border-bottom-color: #3d5a72; color: #0f1720;
+  }
+  .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 560px) { .two-cols { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="left-col">
+    <canvas id="game" width="900" height="400"></canvas>
+
+    <div class="hud">
+      <span class="chip">Игрок: <b id="playerLabel">—</b></span>
+      <span class="chip">Жизни: <b id="livesLabel">❤❤❤</b></span>
+      <span class="chip">Очки: <b id="hudScore">0</b></span>
+      <span class="chip">Прогресс: <b id="progressLabel">0%</b></span>
+    </div>
+
+    <div class="controls">
+      <button id="btnLeft"    type="button">◀ Влево</button>
+      <button id="btnRight"   type="button">Вправо ▶</button>
+      <button id="btnUp"      type="button">▲ Прыжок</button>
+      <button id="btnDown"    type="button">▼ Присесть</button>
+      <button id="btnStart"   type="button" class="primary">Старт / Пауза</button>
+      <button id="btnRestart" type="button" class="danger">Рестарт</button>
+    </div>
+
+    <div id="status" class="status">Введите имя игрока…</div>
+  </div>
+
+  <aside class="panel">
+    <div class="score-box">
+      <div class="score-label">Текущий счёт</div>
+      <div class="score-value" id="currentScore">0</div>
+      <div class="score-sub">Игрок: <b id="panelPlayer">—</b></div>
+    </div>
+
+    <h2>🏆 Таблица лучших</h2>
+    <table id="scoreTable">
+      <thead>
+        <tr><th>#</th><th>Игрок</th><th>Счёт</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h3>🕒 Последние игры</h3>
+    <ul id="recentList" class="recent"></ul>
+
+    <h3>🎁 Бонусы</h3>
+    <div class="legend">
+      <span><i class="dot" style="background:#e63946"></i>Яблоко — 2</span>
+      <span><i class="dot" style="background:#f4a300"></i>Мёд — 3</span>
+      <span><i class="dot" style="background:#c1121f"></i>Вишенка — 1</span>
+    </div>
+  </aside>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-box" id="modalBody"></div>
+</div>
+
+<script>
+/* ============================================================
+   1. КОНСТАНТЫ И ТАБЛИЦЫ — сразу после <script>
+   ============================================================ */
+
+/* pieces — таблица фигур бонусов */
+const pieces = [
+  { kind: 'apple',  name: 'Яблоко',  points: 2, color: '#e63946', leaf: '#2a9d8f', r: 12 },
+  { kind: 'honey',  name: 'Мёд',     points: 3, color: '#f4a300', leaf: '#a86f00', r: 13 },
+  { kind: 'cherry', name: 'Вишенка', points: 1, color: '#c1121f', leaf: '#2a9d8f', r: 10 }
+];
+
+/* Размеры мира */
+const CANVAS_W     = 900;
+const CANVAS_H     = 400;
+const GROUND_Y     = 330;
+const WORLD_LENGTH = 6400;
+const CAMERA_OFFSET = 260;
+
+/* Физика (значения — за один кадр при 60 fps) */
+const GRAVITY         = 0.78;
+const JUMP_VELOCITY   = -14.4;
+const MAX_FALL_SPEED  = 18;
+const MOVE_ACCEL      = 0.62;
+const AIR_ACCEL       = 0.42;
+const MOVE_MAX        = 6.4;
+const GROUND_FRICTION = 0.80;
+const AIR_FRICTION    = 0.965;
+
+/* Габариты Марио */
+const MARIO_W        = 30;
+const MARIO_H        = 48;
+const MARIO_CROUCH_H = 26;
+
+/* Правила игры */
+const START_LIVES = 3;
+const TABLE_SIZE  = 10;
+const RECENT_SIZE = 10;
+const STORAGE_KEY = 'superMarioSaveV2';
+
+/* Цвета */
+const COLORS = {
+  skyTop:      '#7ec8f2',
+  skyBottom:   '#d9f0ff',
+  groundTop:   '#43b04a',
+  groundBody:  '#7a4f2a',
+  groundDark:  '#5b3a1e',
+  pit:         '#0c141c',
+  stone:       '#9aa4ad',
+  stoneDark:   '#616c75',
+  treeTrunk:   '#6b4226',
+  treeLeaf:    '#2f9e44',
+  treeLeaf2:   '#37b24d',
+  well:        '#8d99a6',
+  wellDark:    '#5c6672',
+  wellWater:   '#3b82c4',
+  pipe:        '#2ea043',
+  pipeDark:    '#1b6b2c',
+  pipeLight:   '#69db7c',
+  bridge:      '#b07d3a',
+  bridgeDark:  '#7a5222',
+  overhead:    '#8b5a2b',
+  overheadDark:'#5c3a1a',
+  marioCap:    '#e03131',
+  marioShirt:  '#e03131',
+  marioOverall:'#1d6fd6',
+  marioSkin:   '#f7c59f',
+  marioShoe:   '#4a2c0a',
+  marioHair:   '#3d2210'
+};
+
+/* ============================================================
+   2. ПЕРЕМЕННЫЕ СОСТОЯНИЯ
+   ============================================================ */
+
+const canvas  = document.getElementById('game');
+const ctx     = canvas.getContext('2d');
+
+const modalEl        = document.getElementById('modal');
+const modalBody      = document.getElementById('modalBody');
+const statusEl       = document.getElementById('status');
+const currentScoreEl = document.getElementById('currentScore');
+const playerLabelEl  = document.getElementById('playerLabel');
+const panelPlayerEl  = document.getElementById('panelPlayer');
+const livesLabelEl   = document.getElementById('livesLabel');
+const hudScoreEl     = document.getElementById('hudScore');
+const progressLabelEl= document.getElementById('progressLabel');
+
+let mario      = null;
+let level      = null;
+let cameraX    = 0;
+let lives      = START_LIVES;
+let score      = 0;
+let gameActive = false;
+let paused     = true;
+let playerName = '';
+let bestTable  = [];
+let recentGames= [];
+let lastPlayerName = '';
+let keys = { left: false, right: false, up: false, down: false };
+let lastTime = 0;
+let rafId    = null;
+let toast    = { text: '', until: 0 };
+let gameState = 'awaitName'; /* awaitName | ready | playing | paused | finished */
+
+/* ============================================================
+   3. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+   ============================================================ */
+
+function aabb(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, function (c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+function rr(c, x, y, w, h, r) {
+  r = Math.min(r, w/2, h/2);
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y,     x + w, y + h, r);
+  c.arcTo(x + w, y + h, x,     y + h, r);
+  c.arcTo(x,     y + h, x,     y,     r);
+  c.arcTo(x,     y,     x + w, y,     r);
+  c.closePath();
+}
+
+function setStatus(text) { statusEl.textContent = text; }
+
+function setToast(text, ms) {
+  toast.text = text;
+  toast.until = performance.now() + (ms || 1400);
+}
+
+function modalOpen() { return !modalEl.classList.contains('hidden'); }
+function openModal(html) { modalBody.innerHTML = html; modalEl.classList.remove('hidden'); }
+function closeModal()    { modalEl.classList.add('hidden'); }
+
+/* ============================================================
+   4. СОХРАНЕНИЕ / ЗАГРУЗКА
+   ============================================================ */
+
+function isValidRecord(r) {
+  return r && typeof r.name === 'string' && typeof r.score === 'number';
+}
+
+function sortTable() {
+  bestTable.sort(function (a, b) {
+    return b.score - a.score || (a.time || 0) - (b.time || 0);
+  });
+  if (bestTable.length > TABLE_SIZE) bestTable.length = TABLE_SIZE;
+}
+
+function loadStorage() {
+  let raw = null;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+  if (!raw) { bestTable = []; recentGames = []; return; }
+  try {
+    const data = JSON.parse(raw);
+    bestTable    = Array.isArray(data.table)  ? data.table.filter(isValidRecord)  : [];
+    recentGames  = Array.isArray(data.recent) ? data.recent.filter(isValidRecord) : [];
+    lastPlayerName = typeof data.lastName === 'string' ? data.lastName : '';
+  } catch (e) { bestTable = []; recentGames = []; }
+  sortTable();
+}
+
+function saveStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      table: bestTable, recent: recentGames, lastName: lastPlayerName
+    }));
+  } catch (e) {}
+}
+
+function recordScore(name, value) {
+  const rec = { name: name, score: value, time: Date.now(),
+                date: new Date().toLocaleString('ru-RU') };
+  recentGames.unshift(rec);
+  if (recentGames.length > RECENT_SIZE) recentGames.length = RECENT_SIZE;
+  bestTable.push(rec);
+  sortTable();
+  lastPlayerName = name;
+  saveStorage();
+  renderTable(); renderRecent();
+}
+
+/* ============================================================
+   5. ОТРИСОВКА ТАБЛИЦ
+   ============================================================ */
+
+function renderTable() {
+  const tbody = document.querySelector('#scoreTable tbody');
+  if (!bestTable.length) {
+    tbody.innerHTML = '<tr><td colspan="3" class="empty">Пока нет результатов</td></tr>';
+    return;
+  }
+  tbody.innerHTML = bestTable.map(function (rec, i) {
+    return '<tr><td>' + (i + 1) + '</td><td>' + escapeHtml(rec.name) +
+           '</td><td>' + rec.score + '</td></tr>';
+  }).join('');
+}
+
+function renderRecent() {
+  const ul = document.getElementById('recentList');
+  if (!recentGames.length) {
+    ul.innerHTML = '<li class="empty">Пока не сыграно ни одной игры</li>';
+    return;
+  }
+  ul.innerHTML = recentGames.map(function (r) {
+    return '<li><span>' + escapeHtml(r.name) + '</span><span class="rs">' + r.score + '</span></li>';
+  }).join('');
+}
+
+function tableRowsHtml() {
+  if (!bestTable.length) return '<tr><td colspan="3" class="empty">Пока нет результатов</td></tr>';
+  return bestTable.map(function (rec, i) {
+    return '<tr><td>' + (i+1) + '</td><td>' + escapeHtml(rec.name) +
+           '</td><td>' + rec.score + '</td></tr>';
+  }).join('');
+}
+
+function recentRowsHtml() {
+  if (!recentGames.length) return '<li class="empty">Нет данных</li>';
+  return recentGames.map(function (r) {
+    return '<li><span>' + escapeHtml(r.name) + '</span><span class="rs">' + r.score + '</span></li>';
+  }).join('');
+}
+
+function updateHud() {
+  currentScoreEl.textContent = score;
+  hudScoreEl.textContent     = score;
+  livesLabelEl.textContent   = lives > 0 ? '❤'.repeat(lives) : '—';
+  playerLabelEl.textContent  = playerName || '—';
+  panelPlayerEl.textContent  = playerName || '—';
+  const pct = mario ? Math.min(100, Math.max(0, Math.round(mario.x / WORLD_LENGTH * 100))) : 0;
+  progressLabelEl.textContent = pct + '%';
+}
+
+/* ============================================================
+   6. ГЕНЕРАЦИЯ МАРШРУТА
+   ============================================================ */
+
+function randomPiece() {
+  return pieces[Math.floor(Math.random() * pieces.length)];
+}
+
+function makeBonus(piece, x, y) {
+  return {
+    piece: piece, x: x, y: y, r: piece.r,
+    taken: false, bob: Math.random() * Math.PI * 2,
+    baseY: y
+  };
+}
+
+/* Выбор типа следующего объекта, чтобы не повторялся подряд */
+function pickFeature(last) {
+  const weights = [
+    { k: 'stone',    w: 14 },
+    { k: 'tree',     w: 12 },
+    { k: 'well',     w: 11 },
+    { k: 'pipe',     w: 12 },
+    { k: 'pit',      w: 14 },
+    { k: 'overhead', w: 10 },
+    { k: 'bridge',   w: 9  },
+    { k: 'crate',    w: 10 },
+    { k: 'cluster',  w: 8  }
+  ].filter(function (o) { return o.k !== last; });
+
+  const total = weights.reduce(function (s, o) { return s + o.w; }, 0);
+  let r = Math.random() * total;
+  for (const o of weights) {
+    r -= o.w;
+    if (r <= 0) return o.k;
+  }
+  return weights[0].k;
+}
+
+function generateLevel() {
+  const solids   = [];
+  const bonuses  = [];
+  const features = [];
+  const pits     = [];
+
+  const startFlat = 260;
+  let x = startFlat;
+  let last = '';
+
+  /* пока не дошли до конца маршрута — генерируем объекты */
+  while (x < WORLD_LENGTH - 340) {
+    const kind = pickFeature(last);
+    last = kind;
+
+    const f = { kind: kind, x: x };
+
+    if (kind === 'stone') {
+      f.w = 34; f.h = 28;
+      x += 180 + Math.floor(Math.random() * 70);
+      f.bonusPiece = randomPiece();
+    }
+    else if (kind === 'tree') {
+      f.w = 34; f.h = 104;
+      x += 210 + Math.floor(Math.random() * 70);
+    }
+    else if (kind === 'well') {
+      f.w = 58; f.h = 36;
+      x += 200 + Math.floor(Math.random() * 70);
+      f.bonusPiece = randomPiece();
+    }
+    else if (kind === 'pipe') {
+      f.w = 46; f.h = 60;
+      x += 200 + Math.floor(Math.random() * 70);
+      f.bonusPiece = randomPiece();
+    }
+    else if (kind === 'crate') {
+      f.w = 40; f.h = 40;
+      x += 190 + Math.floor(Math.random() * 60);
+      f.bonusPiece = randomPiece();
+    }
+    else if (kind === 'overhead') {
+      f.w = 88;
+      /* низ висит на высоте GROUND_Y - 30 — присев (h=26) Марио проходит */
+      x += 240 + Math.floor(Math.random() * 60);
+    }
+    else if (kind === 'pit') {
+      f.w = 90 + Math.floor(Math.random() * 70);
+      f.hasBridge = Math.random() < 0.35;
+      f.bridgeY = GROUND_Y - 70;
+      x += f.w + 190 + Math.floor(Math.random() * 80);
+      f.bonusPiece = randomPiece();
+      pits.push({ x: f.x, w: f.w });
+    }
+    else if (kind === 'bridge') {
+      f.w = 150;
+      f.bridgeY = GROUND_Y - 70;
+      /* мостик висит над ямой — значит под ним пропасть */
+      pits.push({ x: f.x, w: f.w });
+      x += f.w + 190 + Math.floor(Math.random() * 60);
+      f.bonusPiece = randomPiece();
+    }
+    else if (kind === 'cluster') {
+      /* гроздь бонусов без препятствия */
+      f.w = 0;
+      x += 190 + Math.floor(Math.random() * 60);
+      f.clusterPieces = [randomPiece(), randomPiece(), randomPiece()];
+    }
+
+    f.endX = x;
+    features.push(f);
+  }
+
+  /* сортируем ямы и строим землю между ними */
+  pits.sort(function (a, b) { return a.x - b.x; });
+
+  let cursor = 0;
+  for (const p of pits) {
+    if (p.x > cursor) {
+      solids.push({ x: cursor, y: GROUND_Y, w: p.x - cursor, h: 280, kind: 'ground' });
+    }
+    cursor = Math.max(cursor, p.x + p.w);
+  }
+  solids.push({
+    x: cursor, y: GROUND_Y,
+    w: WORLD_LENGTH + 800 - cursor, h: 280, kind: 'ground'
+  });
+
+  /* добавляем препятствия и бонусы */
+  for (const f of features) {
+    if (f.kind === 'stone' || f.kind === 'tree' || f.kind === 'well' ||
+        f.kind === 'pipe'  || f.kind === 'crate') {
+      solids.push({
+        x: f.x, y: GROUND_Y - f.h, w: f.w, h: f.h, kind: f.kind
+      });
+    }
+    else if (f.kind === 'overhead') {
+      /* потолочное препятствие: сверху вниз, низ на GROUND_Y-30 */
+      solids.push({
+        x: f.x, y: GROUND_Y - 150, w: f.w, h: 120, kind: 'overhead'
+      });
+    }
+    else if (f.kind === 'pit' && f.hasBridge) {
+      solids.push({
+        x: f.x + 8, y: f.bridgeY, w: f.w - 16, h: 14, kind: 'bridge'
+      });
+    }
+    else if (f.kind === 'bridge') {
+      solids.push({
+        x: f.x, y: f.bridgeY, w: f.w, h: 14, kind: 'bridge'
+      });
+    }
+
+    /* одиночный бонус над препятствием */
+    if (f.bonusPiece) {
+      const bx = f.x + (f.w || 60) / 2 - 12;
+      let by;
+      if (f.kind === 'pit' || f.kind === 'bridge') by = GROUND_Y - 170;
+      else if (f.kind === 'overhead')             by = GROUND_Y - 190;
+      else                                        by = GROUND_Y - f.h - 60;
+      bonuses.push(makeBonus(f.bonusPiece, bx, by));
+    }
+
+    /* гроздь из трёх бонусов */
+    if (f.clusterPieces) {
+      const cx = f.x + 60;
+      f.clusterPieces.forEach(function (p, i) {
+        bonuses.push(makeBonus(p, cx + i * 48, GROUND_Y - 110 - (i % 2) * 26));
+      });
+    }
+  }
+
+  /* немного бонусов «на ровном месте» */
+  for (let bx = 500; bx < WORLD_LENGTH - 400; bx += 620) {
+    if (Math.random() < 0.7) {
+      bonuses.push(makeBonus(randomPiece(), bx, GROUND_Y - 120 - Math.random() * 40));
+    }
+  }
+
+  return {
+    solids:  solids,
+    bonuses: bonuses,
+    pits:    pits,
+    finishX: WORLD_LENGTH
+  };
+}
+
+/* ============================================================
+   7. МАРИО
+   ============================================================ */
+
+function createMario() {
+  return {
+    x: 60, y: GROUND_Y - MARIO_H,
+    w: MARIO_W, h: MARIO_H,
+    vx: 0, vy: 0,
+    facing: 1,
+    onGround: false,
+    crouching: false,
+    walkFrame: 0,
+    animTime: 0,
+    hurtFlash: 0
+  };
+}
+
+function applyInput() {
+  const m = mario;
+  if (!m) return;
+
+  /* приседание — только на земле */
+  m.crouching = keys.down && m.onGround;
+
+  /* разгон по горизонтали */
+  const accel = m.onGround ? MOVE_ACCEL : AIR_ACCEL;
+  const input = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+
+  if (input !== 0) {
+    /* разгон в выбранную сторону */
+    m.vx += input * accel;
+    m.facing = input;
+  } else {
+    /* трение */
+    const fr = m.onGround ? GROUND_FRICTION : AIR_FRICTION;
+    m.vx *= fr;
+    if (Math.abs(m.vx) < 0.05) m.vx = 0;
+  }
+
+  /* ограничение скорости */
+  if (m.vx >  MOVE_MAX) m.vx =  MOVE_MAX;
+  if (m.vx < -MOVE_MAX) m.vx = -MOVE_MAX;
+
+  /* прыжок */
+  if (keys.up && m.onGround && !m.crouching) {
+    m.vy = JUMP_VELOCITY;
+    m.onGround = false;
+    setToast('Прыжок!', 500);
+  }
+
+  /* гравитация */
+  m.vy += GRAVITY;
+  if (m.vy > MAX_FALL_SPEED) m.vy = MAX_FALL_SPEED;
+}
+
+/* Перемещение с разрешением коллизий по осям */
+function moveAndCollide(m, solids) {
+  /* ----- горизонталь ----- */
+  m.x += m.vx;
+  for (const s of solids) {
+    if (aabb(m, s)) {
+      if (m.vx > 0)      m.x = s.x - m.w;
+      else if (m.vx < 0) m.x = s.x + s.w;
+      m.vx = 0;
+    }
+  }
+
+  /* ----- вертикаль ----- */
+  const wasOnGround = m.onGround;
+  m.onGround = false;
+  m.y += m.vy;
+  for (const s of solids) {
+    if (aabb(m, s)) {
+      if (m.vy > 0) {
+        m.y = s.y - m.h;
+        m.vy = 0;
+        m.onGround = true;
+      } else if (m.vy < 0) {
+        m.y = s.y + s.h;
+        m.vy = 0;
+      }
+    }
+  }
+  return wasOnGround;
+}
+
+/* Проверка падения в яму */
+function checkPitFall() {
+  const m = mario;
+  if (m.y > CANVAS_H + 60) return true;
+
+  /* если центр Марио над ямой и он ниже уровня земли — падает */
+  const cx = m.x + m.w / 2;
+  for (const p of level.pits) {
+    if (cx > p.x + 6 && cx < p.x + p.w - 6) {
+      /* над ямой: земля отсутствует, но мост может спасти */
+      let onBridge = false;
+      for (const s of level.solids) {
+        if (s.kind === 'bridge' && cx > s.x && cx < s.x + s.w &&
+            m.y + m.h <= s.y + 6) {
+          onBridge = true; break;
+        }
+      }
+      if (!onBridge && m.y + m.h >= GROUND_Y) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/* Сбор бонусов */
+function collectBonuses() {
+  const m = mario;
+  for (const b of level.bonuses) {
+    if (b.taken) continue;
+    const bx = b.x, by = b.baseY + Math.sin(b.bob) * 4;
+    const br = b.r;
+    /* круг-прямоугольник */
+    const closestX = Math.max(m.x, Math.min(bx + br, m.x + m.w));
+    const closestY = Math.max(m.y, Math.min(by + br, m.y + m.h));
+    const dx = (bx + br) - closestX;
+    const dy = (by + br) - closestY;
+    if (dx * dx + dy * dy < br * br) {
+      b.taken = true;
+      score += b.piece.points;
+      setToast('+' + b.piece.points + ' ' + b.piece.name, 700);
+      updateHud();
+    }
+  }
+}
+
+/* ============================================================
+   8. ИГРОВОЙ ЦИКЛ
+   ============================================================ */
+
+function update(dt60) {
+  if (!mario || !level) return;
+
+  applyInput();
+
+  const m = mario;
+
+  /* сохраняем исходную высоту и пересчитываем для приседания */
+  const targetH = m.crouching ? MARIO_CROUCH_H : MARIO_H;
+  if (targetH !== m.h) {
+    const bottom = m.y + m.h;
+    m.h = targetH;
+    m.y = bottom - m.h;
+    /* если выросли внутри препятствия — сдвигаем вниз */
+    for (const s of level.solids) {
+      if (aabb(m, s) && s.kind === 'overhead') {
+        m.y = s.y + s.h;
+      }
+    }
+  }
+
+  moveAndCollide(m, level.solids);
+
+  /* анимация ходьбы — ускоряется с ростом |vx| */
+  if (m.onGround && Math.abs(m.vx) > 0.2) {
+    m.walkFrame += Math.abs(m.vx) * 0.16;
+    m.animTime   += dt60;
+  } else {
+    m.walkFrame *= 0.85;
+  }
+
+  collectBonuses();
+
+  /* падение в яму = потеря жизни */
+  if (checkPitFall()) {
+    loseLife();
+    return;
+  }
+
+  /* не улетаем за левый край */
+  if (m.x < 0) { m.x = 0; m.vx = 0; }
+
+  /* финиш */
+  if (m.x + m.w >= level.finishX) {
+    finishGame();
+  }
+
+  /* камера */
+  const targetCam = m.x - CAMERA_OFFSET;
+  cameraX += (targetCam - cameraX) * 0.18;
+  const maxCam = WORLD_LENGTH + 500 - CANVAS_W;
+  if (cameraX < 0) cameraX = 0;
+  if (cameraX > maxCam) cameraX = maxCam;
+
+  updateHud();
+}
+
+/* ============================================================
+   9. ЖИЗНИ, СТАРТ, ФИНИШ
+   ============================================================ */
+
+function loseLife() {
+  lives -= 1;
+  updateHud();
+
+  if (lives <= 0) {
+    setToast('Все жизни потеряны! Игра начинается сначала.', 2200);
+    lives = START_LIVES;
+    startRun();
+    return;
+  }
+
+  setToast('Жизнь потеряна! Забег с начала. Осталось: ' + lives, 2000);
+  startRun();
+}
+
+/* Запуск нового забега (без потери жизней) */
+function startRun() {
+  mario = createMario();
+  level = generateLevel();
+  cameraX = 0;
+  score = 0;
+  paused = false;
+  gameActive = true;
+  gameState = 'playing';
+  updateHud();
+  setStatus('Забег начался! Собирай бонусы и не падай в ямы.');
+}
+
+/* Полная новая игра с текущим именем */
+function newGame() {
+  lives = START_LIVES;
+  score = 0;
+  startRun();
+}
+
+function finishGame() {
+  if (gameState === 'finished') return;
+  gameState = 'finished';
+  gameActive = false;
+  paused = true;
+
+  const bonus = lives * 10; /* бонус за оставшиеся жизни */
+  const total = score + bonus;
+
+  recordScore(playerName, total);
+  updateHud();
+
+  setToast('🏁 Финиш! Очки: ' + score + ' + ' + bonus + ' бонус = ' + total, 4000);
+
+  openModal(
+    '<h2>🏁 Финиш!</h2>' +
+    '<p>Игрок <b>' + escapeHtml(playerName) + '</b> добежал до финиша!</p>' +
+    '<p>Очки за бонусы: <b>' + score + '</b><br>' +
+    'Бонус за оставшиеся жизни (' + lives + ' × 10): <b>' + bonus + '</b><br>' +
+    'Итоговый счёт: <b style="color:#ffd166;font-size:20px">' + total + '</b></p>' +
+    '<h3>🏆 Таблица лучших</h3>' +
+    '<table><thead><tr><th>#</th><th>Игрок</th><th>Счёт</th></tr></thead>' +
+    '<tbody>' + tableRowsHtml() + '</tbody></table>' +
+    '<div class="modal-actions">' +
+      '<button class="ghost" id="btnNewRunModal">Новый забег</button>' +
+      '<button id="btnPlayAgain">Играть снова</button>' +
+    '</div>'
+  );
+
+  document.getElementById('btnPlayAgain').onclick = function () {
+    closeModal();
+    newGame();
+  };
+  document.getElementById('btnNewRunModal').onclick = function () {
+    closeModal();
+    newGame();
+  };
+}
+
+/* ============================================================
+   10. ОТРИСОВКА
+   ============================================================ */
+
+function drawSky() {
+  const g = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+  g.addColorStop(0, COLORS.skyTop);
+  g.addColorStop(1, COLORS.skyBottom);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  /* облака */
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  const cloudOffset = (cameraX * 0.25) % 600;
+  for (let i = -1; i < 4; i++) {
+    const cx = i * 600 - cloudOffset + 120;
+    drawCloud(cx, 60, 1.0);
+    drawCloud(cx + 320, 110, 0.7);
+  }
+
+  /* дальние холмы */
+  ctx.fillStyle = 'rgba(120,180,220,0.35)';
+  const hillOffset = (cameraX * 0.4) % 800;
+  for (let i = -1; i < 3; i++) {
+    const hx = i * 800 - hillOffset + 200;
+    ctx.beginPath();
+    ctx.ellipse(hx, GROUND_Y + 30, 220, 120, 0, Math.PI, 0);
+    ctx.fill();
+  }
+}
+
+function drawCloud(x, y, s) {
+  ctx.beginPath();
+  ctx.ellipse(x,          y,          38 * s, 22 * s, 0, 0, Math.PI * 2);
+  ctx.ellipse(x + 34 * s, y - 8 * s,  30 * s, 20 * s, 0, 0, Math.PI * 2);
+  ctx.ellipse(x - 32 * s, y + 2 * s,  26 * s, 18 * s, 0, 0, Math.PI * 2);
+  ctx.ellipse(x + 12 * s, y + 8 * s,  30 * s, 18 * s, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawGroundBlock(x, y, w, h) {
+  /* земля */
+  ctx.fillStyle = COLORS.groundBody;
+  ctx.fillRect(x, y, w, h);
+  /* полоски земли */
+  ctx.fillStyle = COLORS.groundDark;
+  const stripes = Math.ceil(w / 46);
+  for (let i = 0; i < stripes; i++) {
+    const sx = x + i * 46;
+    if ((i % 2) === 0) ctx.fillRect(sx + 8, y + 30, 14, 8);
+    else               ctx.fillRect(sx + 22, y + 54, 14, 8);
+  }
+  /* трава сверху */
+  ctx.fillStyle = COLORS.groundTop;
+  ctx.fillRect(x, y - 6, w, 10);
+  ctx.fillStyle = '#5bd164';
+  for (let i = 0; i < stripes; i++) {
+    const sx = x + i * 46 + 4;
+    ctx.beginPath();
+    ctx.moveTo(sx,     y - 6);
+    ctx.lineTo(sx + 4, y - 14);
+    ctx.lineTo(sx + 8, y - 6);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawPitArea(p) {
+  /* тёмная пропасть под ямой */
+  ctx.fillStyle = COLORS.pit;
+  ctx.fillRect(p.x, GROUND_Y, p.w, CANVAS_H - GROUND_Y);
+  /* зубчатые края */
+  ctx.fillStyle = '#243440';
+  for (let i = 0; i < p.w; i += 10) {
+    ctx.beginPath();
+    ctx.moveTo(p.x + i, GROUND_Y);
+    ctx.lineTo(p.x + i + 5, GROUND_Y + 10);
+    ctx.lineTo(p.x + i + 10, GROUND_Y);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawStone(s) {
+  ctx.fillStyle = COLORS.stoneDark;
+  rr(ctx, s.x, s.y + 4, s.w, s.h - 4, 5); ctx.fill();
+  ctx.fillStyle = COLORS.stone;
+  rr(ctx, s.x + 2, s.y, s.w - 4, s.h - 6, 5); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(s.x + s.w * 0.35, s.y + s.h * 0.3, s.w * 0.18, s.h * 0.14, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx.beginPath();
+  ctx.ellipse(s.x + s.w * 0.72, s.y + s.h * 0.7, s.w * 0.13, s.h * 0.10, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawTree(s) {
+  /* ствол */
+  ctx.fillStyle = COLORS.treeTrunk;
+  rr(ctx, s.x + s.w * 0.32, s.y + s.h * 0.4, s.w * 0.36, s.h * 0.6, 3);
+  ctx.fill();
+
+  /* листва — три круга */
+  ctx.fillStyle = COLORS.treeLeaf;
+  ctx.beginPath();
+  ctx.arc(s.x + s.w * 0.5,  s.y + s.h * 0.30, s.w * 0.72, 0, Math.PI * 2);
+  ctx.arc(s.x + s.w * 0.15, s.y + s.h * 0.52, s.w * 0.52, 0, Math.PI * 2);
+  ctx.arc(s.x + s.w * 0.85, s.y + s.h * 0.52, s.w * 0.52, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = COLORS.treeLeaf2;
+  ctx.beginPath();
+  ctx.arc(s.x + s.w * 0.42, s.y + s.h * 0.22, s.w * 0.38, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawWell(s) {
+  /* колодец — каменный цилиндр */
+  ctx.fillStyle = COLORS.wellDark;
+  rr(ctx, s.x, s.y + 4, s.w, s.h, 6); ctx.fill();
+  ctx.fillStyle = COLORS.well;
+  rr(ctx, s.x + 2, s.y, s.w - 4, s.h - 4, 6); ctx.fill();
+
+  /* тёмное отверстие сверху */
+  ctx.fillStyle = '#243440';
+  ctx.beginPath();
+  ctx.ellipse(s.x + s.w / 2, s.y + 6, s.w * 0.36, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* водичка */
+  ctx.fillStyle = COLORS.wellWater;
+  ctx.beginPath();
+  ctx.ellipse(s.x + s.w / 2, s.y + 6, s.w * 0.28, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* камешки */
+  ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y + (s.h / 3) * i);
+    ctx.lineTo(s.x + s.w, s.y + (s.h / 3) * i);
+    ctx.stroke();
+  }
+}
+
+function drawPipe(s) {
+  /* труба — зелёная, в стиле Марио */
+  ctx.fillStyle = COLORS.pipeDark;
+  rr(ctx, s.x + 3, s.y + 10, s.w - 6, s.h - 10, 4); ctx.fill();
+
+  /* верхний раструб */
+  ctx.fillStyle = COLORS.pipe;
+  rr(ctx, s.x, s.y, s.w, 16, 5); ctx.fill();
+
+  ctx.fillStyle = COLORS.pipeLight;
+  rr(ctx, s.x + 5, s.y + 3, 8, s.h - 12, 3); ctx.fill();
+
+  /* блик на раструбе */
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  rr(ctx, s.x + 8, s.y + 3, 6, 9, 3); ctx.fill();
+
+  /* тень */
+  ctx.fillStyle = COLORS.pipeDark;
+  rr(ctx, s.x + s.w - 14, s.y + 18, 8, s.h - 22, 3); ctx.fill();
+}
+
+function drawCrate(s) {
+  ctx.fillStyle = '#a2703b';
+  rr(ctx, s.x, s.y, s.w, s.h, 4); ctx.fill();
+  ctx.strokeStyle = '#6b4322';
+  ctx.lineWidth = 3;
+  rr(ctx, s.x + 1.5, s.y + 1.5, s.w - 3, s.h - 3, 4); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(s.x + 3, s.y + 3);
+  ctx.lineTo(s.x + s.w - 3, s.y + s.h - 3);
+  ctx.moveTo(s.x + s.w - 3, s.y + 3);
+  ctx.lineTo(s.x + 3, s.y + s.h - 3);
+  ctx.stroke();
+}
+
+function drawBridge(s) {
+  /* мостик — доски */
+  ctx.fillStyle = COLORS.bridgeDark;
+  rr(ctx, s.x, s.y + 4, s.w, s.h - 4, 3); ctx.fill();
+  ctx.fillStyle = COLORS.bridge;
+  rr(ctx, s.x, s.y, s.w, s.h - 4, 3); ctx.fill();
+
+  /* верёвки/перила */
+  ctx.strokeStyle = '#5c3a1a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(s.x, s.y);
+  ctx.lineTo(s.x + s.w, s.y);
+  ctx.stroke();
+
+  /* доски */
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i * 18 < s.w; i++) {
+    ctx.beginPath();
+    ctx.moveTo(s.x + i * 18, s.y + 2);
+    ctx.lineTo(s.x + i * 18, s.y + s.h - 6);
+    ctx.stroke();
+  }
+}
+
+function drawOverhead(s) {
+  /* нависающая ветка/труба — присесть, чтобы пройти */
+  ctx.fillStyle = COLORS.overheadDark;
+  rr(ctx, s.x, s.y, s.w, s.h - 4, 6); ctx.fill();
+  ctx.fillStyle = COLORS.overhead;
+  rr(ctx, s.x, s.y, s.w, s.h - 8, 6); ctx.fill();
+
+  /* текстура коры */
+  ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+  ctx.lineWidth = 2;
+  for (let i = 1; i < 4; i++) {
+    ctx.beginPath();
+    ctx.moveTo(s.x + 8, s.y + i * 22);
+    ctx.lineTo(s.x + s.w - 8, s.y + i * 22);
+    ctx.stroke();
+  }
+
+  /* листики на конце */
+  ctx.fillStyle = COLORS.treeLeaf;
+  ctx.beginPath();
+  ctx.arc(s.x + s.w * 0.5, s.y + s.h + 4, 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = COLORS.treeLeaf2;
+  ctx.beginPath();
+  ctx.arc(s.x + s.w * 0.32, s.y + s.h + 8, 10, 0, Math.PI * 2);
+  ctx.arc(s.x + s.w * 0.68, s.y + s.h + 8, 10, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* стрелка «пригнись» */
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = 'bold 14px Segoe UI, Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('▼', s.x + s.w / 2, s.y + s.h - 6);
+  ctx.textAlign = 'left';
+}
+
+function drawBonus(b) {
+  if (b.taken) return;
+  const bobY = Math.sin(b.bob) * 4;
+  const cx = b.x + b.r;
+  const cy = b.baseY + b.r + bobY;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  /* мягкое свечение */
+  const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, b.r * 2.4);
+  glow.addColorStop(0, 'rgba(255,255,180,0.55)');
+  glow.addColorStop(1, 'rgba(255,255,180,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, b.r * 2.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (b.piece.kind === 'apple') {
+    ctx.fillStyle = b.piece.color;
+    ctx.beginPath();
+    ctx.arc(-3, 2, b.r * 0.85, 0, Math.PI * 2);
+    ctx.arc( 3, 2, b.r * 0.85, 0, Math.PI * 2);
+    ctx.fill();
+    /* хвостик */
+    ctx.strokeStyle = '#5c3a1a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -b.r * 0.4);
+    ctx.quadraticCurveTo(2, -b.r * 1.0, 6, -b.r * 1.1);
+    ctx.stroke();
+    /* листик */
+    ctx.fillStyle = b.piece.leaf;
+    ctx.beginPath();
+    ctx.ellipse(8, -b.r * 0.95, 6, 3, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    /* блик */
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(-5, -2, 3, 2, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  else if (b.piece.kind === 'honey') {
+    /* горшочек мёда */
+    ctx.fillStyle = '#8a5a2b';
+    rr(ctx, -b.r, -b.r * 0.2, b.r * 2, b.r * 1.5, 4);
+    ctx.fill();
+    ctx.fillStyle = b.piece.color;
+    rr(ctx, -b.r * 0.9, -b.r * 0.1, b.r * 1.8, b.r * 1.2, 3);
+    ctx.fill();
+    /* крышка */
+    ctx.fillStyle = '#a86f00';
+    rr(ctx, -b.r * 1.05, -b.r * 0.55, b.r * 2.1, b.r * 0.5, 3);
+    ctx.fill();
+    /* капелька */
+    ctx.fillStyle = 'rgba(255,220,120,0.9)';
+    ctx.beginPath();
+    ctx.ellipse(-b.r * 0.4, -b.r * 0.1, 3, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    /* этикетка */
+    ctx.fillStyle = '#fff3c4';
+    rr(ctx, -b.r * 0.55, b.r * 0.25, b.r * 1.1, b.r * 0.55, 2);
+    ctx.fill();
+  }
+  else {
+    /* вишенка */
+    ctx.fillStyle = b.piece.color;
+    ctx.beginPath();
+    ctx.arc(-4, 2, b.r * 0.8, 0, Math.PI * 2);
+    ctx.arc( 5, 3, b.r * 0.75, 0, Math.PI * 2);
+    ctx.fill();
+    /* веточки */
+    ctx.strokeStyle = '#3d7a3d';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-4, -b.r * 0.35);
+    ctx.quadraticCurveTo(0, -b.r * 1.1, 4, -b.r * 1.2);
+    ctx.moveTo( 5, -b.r * 0.35);
+    ctx.quadraticCurveTo(5, -b.r * 1.0, 4, -b.r * 1.2);
+    ctx.stroke();
+    /* листик */
+    ctx.fillStyle = b.piece.leaf;
+    ctx.beginPath();
+    ctx.ellipse(7, -b.r * 1.1, 6, 3, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    /* блики */
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.arc(-6, -1, 2.5, 0, Math.PI * 2);
+    ctx.arc( 3, 0,  2,   0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function drawFinish() {
+  const fx = level.finishX;
+  /* флагшток */
+  ctx.fillStyle = '#8a8a8a';
+  ctx.fillRect(fx - 3, GROUND_Y - 200, 6, 200);
+  /* флажок-клетка */
+  const cell = 12;
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      ctx.fillStyle = ((r + c) % 2 === 0) ? '#ffffff' : '#e03131';
+      ctx.fillRect(fx + 2 + c * cell, GROUND_Y - 196 + r * cell, cell, cell);
+    }
+  }
+  /* сияние */
+  ctx.fillStyle = 'rgba(255,209,102,0.25)';
+  ctx.beginPath();
+  ctx.arc(fx, GROUND_Y - 100, 90, 0, Math.PI * 2);
+  ctx.fill();
+  /* надпись */
+  ctx.fillStyle = '#ffd166';
+  ctx.font = 'bold 20px Segoe UI, Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('ФИНИШ', fx + 24, GROUND_Y - 220);
+  ctx.textAlign = 'left';
+}
+
+/* -------- отрисовка Марио с фазами движения -------- */
+function drawMarioSprite() {
+  const m = mario;
+  if (!m) return;
+
+  const W = m.w;
+  const H = m.h;
+
+  /* фаза движения */
+  let state = 'idle';
+  if (!m.onGround)                    state = 'jump';
+  else if (m.crouching)               state = 'crouch';
+  else if (Math.abs(m.vx) > 0.35)     state = 'walk';
+
+  const cx = m.x + W / 2;
+  const topY = m.y;
+
+  /* тень под Марио */
+  if (m.onGround) {
+    ctx.fillStyle = 'rgba(0,0,0,0.20)';
+    ctx.beginPath();
+    ctx.ellipse(cx, m.y + m.h + 3, W * 0.55, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.save();
+  ctx.translate(cx, topY);
+  if (m.facing < 0) ctx.scale(-1, 1);
+
+  /* пропорции относительно высоты H */
+  const capH   = H * 0.22;
+  const faceH  = H * 0.24;
+  const bodyH  = H * 0.26;
+  const legH   = H * 0.28;
+
+  const faceTop = capH * 0.85;
+  const bodyTop = faceTop + faceH;
+  const legTop  = bodyTop + bodyH;
+
+  const walkPhase = Math.sin(m.walkFrame);
+  const walkPhase2 = Math.cos(m.walkFrame);
+
+  /* --- ноги --- */
+  const legW = W * 0.30;
+  let lx = -W * 0.36;
+  let rx =  W * 0.06;
+  let lLift = 0, rLift = 0;
+
+  if (state === 'walk') {
+    lLift = Math.max(0,  walkPhase) * 6;
+    rLift = Math.max(0, -walkPhase) * 6;
+    lx += walkPhase * 3;
+    rx -= walkPhase * 3;
+  } else if (state === 'jump') {
+    lLift = 3; rLift = -2;
+    lx -= 2;   rx += 3;
+  } else if (state === 'crouch') {
+    /* ноги поджаты */
+    lLift = 0; rLift = 0;
+  }
+
+  /* задняя нога */
+  ctx.fillStyle = COLORS.marioOverall;
+  rr(ctx, lx, legTop - lLift, legW, legH, 3);
+  ctx.fill();
+
+  /* передняя нога */
+  ctx.fillStyle = COLORS.marioOverall;
+  rr(ctx, rx, legTop - rLift, legW, legH, 3);
+  ctx.fill();
+
+  /* ботинки */
+  ctx.fillStyle = COLORS.marioShoe;
+  rr(ctx, lx - 3, legTop + legH - lLift - 4, legW + 8, 10, 3);
+  ctx.fill();
+  rr(ctx, rx - 2, legTop + legH - rLift - 4, legW + 8, 10, 3);
+  ctx.fill();
+
+  /* --- корпус (рубашка) --- */
+  ctx.fillStyle = COLORS.marioShirt;
+  rr(ctx, -W * 0.46, bodyTop, W * 0.92, bodyH, 5);
+  ctx.fill();
+
+  /* --- комбинезон --- */
+  ctx.fillStyle = COLORS.marioOverall;
+  rr(ctx, -W * 0.48, bodyTop + bodyH * 0.32, W * 0.96, bodyH * 0.95, 5);
+  ctx.fill();
+
+  /* лямки */
+  ctx.fillStyle = COLORS.marioOverall;
+  ctx.fillRect(-W * 0.30, bodyTop + bodyH * 0.05, W * 0.12, bodyH * 0.55);
+  ctx.fillRect( W * 0.18, bodyTop + bodyH * 0.05, W * 0.12, bodyH * 0.55);
+
+  /* пуговицы */
+  ctx.fillStyle = '#ffd166';
+  ctx.beginPath();
+  ctx.arc(-W * 0.22, bodyTop + bodyH * 0.55, 2.2, 0, Math.PI * 2);
+  ctx.arc( W * 0.22, bodyTop + bodyH * 0.55, 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* --- руки --- */
+  const armW = W * 0.20;
+  const armH = H * 0.22;
+  const armY = bodyTop + bodyH * 0.10;
+
+  let backArmOff  = 0;
+  let frontArmOff = 0;
+  if (state === 'walk') {
+    backArmOff  = -walkPhase * 5;
+    frontArmOff =  walkPhase * 5;
+  } else if (state === 'jump') {
+    backArmOff = -6; frontArmOff = -6;
+  } else if (state === 'crouch') {
+    backArmOff = 4; frontArmOff = 4;
+  }
+
+  /* задняя рука */
+  ctx.fillStyle = COLORS.marioShirt;
+  rr(ctx, -W * 0.66, armY + backArmOff, armW, armH, 4);
+  ctx.fill();
+  /* перчатка задняя */
+  ctx.fillStyle = '#f7f1e3';
+  ctx.beginPath();
+  ctx.arc(-W * 0.56, armY + backArmOff + armH + 2, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* передняя рука */
+  ctx.fillStyle = COLORS.marioShirt;
+  rr(ctx, W * 0.46, armY + frontArmOff, armW, armH, 4);
+  ctx.fill();
+  /* перчатка передняя */
+  ctx.fillStyle = '#f7f1e3';
+  ctx.beginPath();
+  ctx.arc(W * 0.56, armY + frontArmOff + armH + 2, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* --- голова --- */
+  /* лицо */
+  ctx.fillStyle = COLORS.marioSkin;
+  ctx.beginPath();
+  ctx.ellipse(0, faceTop + faceH * 0.5, W * 0.48, faceH * 0.55, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* ухо */
+  ctx.fillStyle = COLORS.marioSkin;
+  ctx.beginPath();
+  ctx.ellipse(-W * 0.40, faceTop + faceH * 0.5, 4, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* волосы сбоку */
+  ctx.fillStyle = COLORS.marioHair;
+  ctx.beginPath();
+  ctx.ellipse(-W * 0.30, faceTop + faceH * 0.45, 6, 8, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* глаз */
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.ellipse(W * 0.14, faceTop + faceH * 0.42, 4.2, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#1a1a1a';
+  ctx.beginPath();
+  ctx.arc(W * 0.17, faceTop + faceH * 0.44, 2.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* нос */
+  ctx.fillStyle = COLORS.marioSkin;
+  ctx.beginPath();
+  ctx.ellipse(W * 0.34, faceTop + faceH * 0.62, 5.5, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* усы */
+  ctx.fillStyle = COLORS.marioHair;
+  ctx.beginPath();
+  ctx.ellipse(W * 0.12, faceTop + faceH * 0.82, W * 0.34, faceH * 0.14, 0.05, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(-W * 0.22, faceTop + faceH * 0.80, W * 0.22, faceH * 0.12, -0.1, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* --- кепка --- */
+  ctx.fillStyle = COLORS.marioCap;
+  ctx.beginPath();
+  ctx.ellipse(0, faceTop + capH * 0.10, W * 0.55, capH * 0.62, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* козырёк */
+  ctx.fillStyle = COLORS.marioCap;
+  rr(ctx, W * 0.05, faceTop - capH * 0.05, W * 0.72, capH * 0.42, 4);
+  ctx.fill();
+
+  /* буква M на кепке */
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold ' + Math.round(capH * 0.62) + 'px Segoe UI, Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('M', W * 0.02, faceTop + capH * 0.05);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  /* блик на кепке */
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.beginPath();
+  ctx.ellipse(-W * 0.15, faceTop + capH * 0.02, W * 0.20, capH * 0.18, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+
+  /* ---- всплывающие подсказки над Марио ---- */
+  if (m.crouching) {
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.font = 'bold 11px Segoe UI, Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('присел', cx, m.y - 8);
+    ctx.textAlign = 'left';
+  }
+  if (!m.onGround && m.vy < -4) {
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = 'bold 11px Segoe UI, Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('↑', cx, m.y - 8);
+    ctx.textAlign = 'left';
+  }
+}
+
+function render() {
+  ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+  drawSky();
+
+  ctx.save();
+  ctx.translate(-cameraX, 0);
+
+  /* ямы (тёмный фон) — рисуем до земли */
+  if (level) {
+    for (const p of level.pits) {
+      if (p.x + p.w < cameraX - 40 || p.x > cameraX + CANVAS_W + 40) continue;
+      drawPitArea(p);
+    }
+
+    /* земля и препятствия */
+    for (const s of level.solids) {
+      if (s.x + s.w < cameraX - 60 || s.x > cameraX + CANVAS_W + 60) continue;
+      if (s.kind === 'ground')      drawGroundBlock(s.x, s.y, s.w, s.h);
+      else if (s.kind === 'stone')  drawStone(s);
+      else if (s.kind === 'tree')   drawTree(s);
+      else if (s.kind === 'well')   drawWell(s);
+      else if (s.kind === 'pipe')   drawPipe(s);
+      else if (s.kind === 'crate')  drawCrate(s);
+      else if (s.kind === 'bridge') drawBridge(s);
+      else if (s.kind === 'overhead') drawOverhead(s);
+    }
+
+    /* финиш */
+    drawFinish();
+
+    /* бонусы */
+    for (const b of level.bonuses) {
+      if (b.taken) continue;
+      if (b.x + b.r * 2 < cameraX - 40 || b.x > cameraX + CANVAS_W + 40) continue;
+      drawBonus(b);
+    }
+
+    /* Марио */
+    drawMarioSprite();
+  }
+
+  ctx.restore();
+
+  /* ---- верхний баннер ---- */
+  if (playerName) {
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    rr(ctx, 12, 12, 260, 34, 8); ctx.fill();
+    ctx.fillStyle = '#ffd166';
+    ctx.font = 'bold 16px Segoe UI, Arial';
+    ctx.fillText('Игрок: ' + playerName, 24, 34);
+  }
+
+  /* ---- временное сообщение ---- */
+  if (performance.now() < toast.until && toast.text) {
+    const alpha = Math.min(1, (toast.until - performance.now()) / 500);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    const tw = ctx.measureText(toast.text).width + 40;
+    rr(ctx, CANVAS_W / 2 - tw / 2, 70, tw, 40, 10); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px Segoe UI, Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(toast.text, CANVAS_W / 2, 96);
+    ctx.textAlign = 'left';
+    ctx.globalAlpha = 1;
+  }
+
+  /* ---- пауза ---- */
+  if (paused && gameState === 'paused' && gameActive) {
+    ctx.fillStyle = 'rgba(0,0,0,0.42)';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 46px Segoe UI, Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('ПАУЗА', CANVAS_W / 2, CANVAS_H / 2 - 6);
+    ctx.font = '16px Segoe UI, Arial';
+    ctx.fillStyle = '#ffd166';
+    ctx.fillText('Пробел или кнопка «Старт/Пауза» — продолжить', CANVAS_W / 2, CANVAS_H / 2 + 30);
+    ctx.textAlign = 'left';
+  }
+}
+
+/* ============================================================
+   11. ГЛАВНЫЙ ЦИКЛ
+   ============================================================ */
+
+function frame(now) {
+  rafId = requestAnimationFrame(frame);
+
+  if (!lastTime) lastTime = now;
+  let dt = now - lastTime;
+  lastTime = now;
+  if (dt > 60) dt = 60;               /* защита от больших скачков */
+  const dt60 = dt / 16.667;
+
+  /* обновляем анимацию бобов бонусов даже на паузе */
+  if (level) {
+    for (const b of level.bonuses) {
+      b.bob += 0.06 * dt60;
+    }
+  }
+
+  if (gameActive && !paused && gameState === 'playing') {
+    update(dt60);
+  }
+
+  render();
+}
+
+/* ============================================================
+   12. УПРАВЛЕНИЕ
+   ============================================================ */
+
+function togglePause() {
+  if (gameState === 'finished' || gameState === 'awaitName' || gameState === 'ready') {
+    /* если ещё не начали — стартуем */
+    if (gameState === 'ready' || gameState === 'awaitName') {
+      newGame();
+    }
+    return;
+  }
+  if (paused) {
+    paused = false;
+    gameState = 'playing';
+    setStatus('Игра продолжается.');
+  } else {
+    paused = true;
+    gameState = 'paused';
+    setStatus('Пауза. Пробел — продолжить.');
+  }
+}
+
+function restartGame() {
+  if (gameState === 'awaitName' && !playerName) return;
+  lives = START_LIVES;
+  score = 0;
+  newGame();
+  setStatus('Новая игра!');
+  setToast('Рестарт!', 1200);
+}
+
+/* --- клавиатура --- */
+window.addEventListener('keydown', function (e) {
+  const k = e.key;
+  if (k === ' ') {
+    e.preventDefault();
+    if (!modalOpen()) togglePause();
+    else {
+      /* в модалке пробел = подтвердить */
+      const btn = modalBody.querySelector('button');
+      if (btn) btn.click();
+    }
+  }
+  else if (k === 'ArrowLeft')  { e.preventDefault(); keys.left = true;  }
+  else if (k === 'ArrowRight') { e.preventDefault(); keys.right = true; }
+  else if (k === 'ArrowUp')    { e.preventDefault(); keys.up = true;    }
+  else if (k === 'ArrowDown')  { e.preventDefault(); keys.down = true;  }
+  else if (k === 'Escape')     { e.preventDefault(); restartGame();     }
+}, { passive: false });
+
+window.addEventListener('keyup', function (e) {
+  const k = e.key;
+  if (k === 'ArrowLeft')  keys.left = false;
+  else if (k === 'ArrowRight') keys.right = false;
+  else if (k === 'ArrowUp')    keys.up = false;
+  else if (k === 'ArrowDown')  keys.down = false;
+});
+
+/* --- экранные кнопки --- */
+function bindHoldButton(el, keyName) {
+  function press(e) {
+    e.preventDefault();
+    keys[keyName] = true;
+    el.classList.add('pressed');
+  }
+  function release(e) {
+    if (e) e.preventDefault();
+    keys[keyName] = false;
+    el.classList.remove('pressed');
+  }
+  el.addEventListener('pointerdown', press);
+  el.addEventListener('pointerup', release);
+  el.addEventListener('pointerleave', release);
+  el.addEventListener('pointercancel', release);
+  el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+}
+
+bindHoldButton(document.getElementById('btnLeft'),  'left');
+bindHoldButton(document.getElementById('btnRight'), 'right');
+bindHoldButton(document.getElementById('btnUp'),    'up');
+bindHoldButton(document.getElementById('btnDown'),  'down');
+
+document.getElementById('btnStart').addEventListener('click', function () {
+  if (!modalOpen()) togglePause();
+});
+document.getElementById('btnRestart').addEventListener('click', function () {
+  restartGame();
+});
+
+/* ============================================================
+   13. СТАРТОВОЕ МОДАЛЬНОЕ ОКНО
+   ============================================================ */
+
+function openNameModal() {
+  openModal(
+    '<h2>🍄 Добро пожаловать в Супер Марио!</h2>' +
+    '<p>Введите имя игрока, чтобы начать. Ваш результат сохранится в таблице лучших.</p>' +
+    '<input id="nameInput" maxlength="20" placeholder="Имя игрока" value="' +
+      escapeHtml(lastPlayerName) + '" autocomplete="off">' +
+    '<div class="two-cols" style="margin-top:18px">' +
+      '<div>' +
+        '<h3>🏆 Таблица лучших</h3>' +
+        '<table><thead><tr><th>#</th><th>Игрок</th><th>Счёт</th></tr></thead>' +
+        '<tbody>' + tableRowsHtml() + '</tbody></table>' +
+      '</div>' +
+      '<div>' +
+        '<h3>🕒 Последние 10 игр</h3>' +
+        '<ul class="recent">' + recentRowsHtml() + '</ul>' +
+      '</div>' +
+    '</div>' +
+    '<div class="modal-actions">' +
+      '<button id="btnNameGo">Играть</button>' +
+    '</div>'
+  );
+
+  const input = document.getElementById('nameInput');
+  setTimeout(function () { input.focus(); input.select(); }, 40);
+
+  function submit() {
+    const name = (input.value || '').trim() || 'Игрок';
+    playerName = name;
+    lastPlayerName = name;
+    saveStorage();
+    closeModal();
+    updateHud();
+    newGame();
+    setStatus('Пробел или кнопка «Старт/Пауза» — старт. Стрелки — управление. Escape — рестарт.');
+  }
+
+  document.getElementById('btnNameGo').addEventListener('click', submit);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') submit();
+  });
+}
+
+/* ============================================================
+   14. ИНИЦИАЛИЗАЦИЯ
+   ============================================================ */
+
+function init() {
+  loadStorage();
+  renderTable();
+  renderRecent();
+
+  /* заглушка до ввода имени — пустой уровень */
+  mario = null;
+  level = null;
+
+  updateHud();
+  setStatus('Введите имя игрока…');
+  gameState = 'awaitName';
+
+  if (rafId === null) {
+    rafId = requestAnimationFrame(frame);
+  }
+
+  openNameModal();
+}
+
+init();
+
+/* Пауза при потере фокуса, чтобы игра не «убегала» */
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden && gameActive && !paused) {
+    paused = true;
+    gameState = 'paused';
+    setStatus('Пауза (вкладка неактивна).');
+  }
+});
+</script>
+</body>
+</html>
+

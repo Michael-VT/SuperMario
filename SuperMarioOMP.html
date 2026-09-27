@@ -1,0 +1,2655 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Супер Марио — OMP Edition</title>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    background: radial-gradient(circle at 50% 0%, #24344a 0%, #101821 70%);
+    color: #e9f1f8;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+  }
+
+  body { display: flex; justify-content: center; padding: 18px; }
+
+  .app {
+    display: flex; gap: 18px; align-items: flex-start;
+    flex-wrap: wrap; justify-content: center;
+  }
+
+  .left-col { display: flex; flex-direction: column; gap: 10px; }
+
+  canvas {
+    display: block; border-radius: 12px;
+    box-shadow: 0 12px 34px rgba(0,0,0,.55);
+    background: #87ceeb; max-width: 100%; height: auto;
+    touch-action: none;
+  }
+
+  .hud { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 14px; }
+  .hud .chip {
+    background: #1e2b3c; border: 1px solid #2f4258; border-radius: 999px;
+    padding: 6px 14px; font-weight: 600;
+  }
+  .hud .chip b { color: #ffd166; }
+  .hud .chip.combo { border-color: #b8860b; background: #3a2e10; color: #ffe9a8; }
+
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .controls button {
+    flex: 1 1 0; min-width: 104px; padding: 12px 8px; font-size: 14px;
+    font-weight: 700; color: #0f1720;
+    background: linear-gradient(#ffd166, #f0a500);
+    border: none; border-bottom: 4px solid #b87d00; border-radius: 10px;
+    cursor: pointer; user-select: none; -webkit-user-select: none;
+    touch-action: none; transition: transform .06s, filter .12s;
+  }
+  .controls button:active,
+  .controls button.pressed {
+    transform: translateY(2px); border-bottom-width: 2px; filter: brightness(.92);
+  }
+  .controls button.primary {
+    background: linear-gradient(#7ee787, #2ea043);
+    border-bottom-color: #1b6b2c; color: #06210c;
+  }
+  .controls button.danger {
+    background: linear-gradient(#ff9a9a, #e03131);
+    border-bottom-color: #9b1c1c; color: #2a0505;
+  }
+  .controls button#btnMute {
+    flex: 0 0 56px; min-width: 56px; font-size: 18px;
+    background: linear-gradient(#9fb6cc, #5b7691);
+    border-bottom-color: #3d5a72;
+  }
+
+  .status { min-height: 22px; font-size: 14px; color: #9fb6cc; padding-left: 4px; }
+
+  .panel {
+    width: 340px; max-width: 100%; background: #16202c;
+    border: 1px solid #26374a; border-radius: 14px; padding: 16px;
+    box-shadow: 0 12px 34px rgba(0,0,0,.45);
+  }
+
+  .panel h2 { margin: 14px 0 10px; font-size: 16px; }
+  .panel h3 { margin: 16px 0 8px; font-size: 14px; color: #9fb6cc; }
+
+  .score-box {
+    background: linear-gradient(135deg, #1f3550, #16283c);
+    border: 1px solid #2c4a6b; border-radius: 12px;
+    padding: 12px; text-align: center;
+  }
+  .score-label { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #8fa7bd; }
+  .score-value { font-size: 42px; font-weight: 800; color: #ffd166; line-height: 1.05; }
+  .score-sub { font-size: 13px; color: #9fb6cc; margin-top: 4px; }
+  .score-sub b { color: #e9f1f8; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #22303f; }
+  th {
+    color: #8fa7bd; font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  tbody tr:nth-child(1) td { color: #ffd166; font-weight: 700; }
+  tbody tr:nth-child(2) td { color: #dbe4ee; font-weight: 600; }
+  tbody tr:nth-child(3) td { color: #d8a56b; font-weight: 600; }
+  .empty { color: #6b8098; font-style: italic; }
+
+  ul.recent { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+  ul.recent li {
+    display: flex; justify-content: space-between; gap: 10px;
+    padding: 5px 8px; border-bottom: 1px dashed #22303f;
+  }
+  ul.recent li .rs { color: #ffd166; font-weight: 700; }
+
+  .legend { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; color: #9fb6cc; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .legend b { color: #ffd166; }
+
+  /* ---------- модальное окно ---------- */
+  .modal {
+    position: fixed; inset: 0; background: rgba(6,10,16,.84);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 50; padding: 16px;
+  }
+  .modal.hidden { display: none; }
+  .modal-box {
+    background: #16202c; border: 1px solid #2c4a6b; border-radius: 16px;
+    padding: 24px; width: min(620px, 100%); max-height: 90vh;
+    overflow: auto; box-shadow: 0 24px 60px rgba(0,0,0,.6);
+  }
+  .modal-box h2 { margin: 0 0 10px; font-size: 22px; }
+  .modal-box p { margin: 0 0 12px; color: #b9cbdd; font-size: 14px; }
+  .modal-box input {
+    width: 100%; padding: 12px 14px; font-size: 16px; border-radius: 10px;
+    border: 1px solid #2f4258; background: #101821; color: #e9f1f8; outline: none;
+  }
+  .modal-box input:focus { border-color: #4d7fb5; }
+  .modal-actions { margin-top: 18px; display: flex; justify-content: flex-end; gap: 10px; }
+  .modal-actions button {
+    padding: 12px 26px; font-size: 15px; font-weight: 700;
+    border: none; border-radius: 10px; cursor: pointer; color: #06210c;
+    background: linear-gradient(#7ee787, #2ea043);
+    border-bottom: 4px solid #1b6b2c;
+  }
+  .modal-actions button:active { transform: translateY(2px); border-bottom-width: 2px; }
+  .modal-actions button.ghost {
+    background: linear-gradient(#8fa7bd, #5b7691);
+    border-bottom-color: #3d5a72; color: #0f1720;
+  }
+  .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 560px) { .two-cols { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="left-col">
+    <canvas id="game" width="900" height="400"></canvas>
+
+    <div class="hud">
+      <span class="chip">Уровень: <b id="levelLabel">1/3</b></span>
+      <span class="chip">Жизни: <b id="livesLabel">❤❤❤</b></span>
+      <span class="chip">Счёт: <b id="hudScore">0</b></span>
+      <span class="chip combo" id="comboChip" style="display:none">Комбо: <b id="comboLabel">×1</b></span>
+      <span class="chip">Путь: <b id="progressLabel">0%</b></span>
+    </div>
+
+    <div class="controls">
+      <button class="primary" id="btnStart">▶ Старт / Пауза</button>
+      <button id="btnLeft">◀ Влево</button>
+      <button id="btnUp">⤒ Прыжок</button>
+      <button id="btnDown">⤓ Присесть</button>
+      <button id="btnRight">Вправо ▶</button>
+      <button class="danger" id="btnRestart">⟲ Рестарт</button>
+      <button id="btnMute" title="Звук вкл/выкл (M)">🔊</button>
+    </div>
+
+    <div id="status" class="status">Введите имя игрока…</div>
+  </div>
+
+  <aside class="panel">
+    <div class="score-box">
+      <div class="score-label">Текущий счёт</div>
+      <div class="score-value" id="currentScore">0</div>
+      <div class="score-sub">Игрок: <b id="panelPlayer">—</b></div>
+    </div>
+
+    <h2>🏆 Таблица лучших</h2>
+    <table id="scoreTable">
+      <thead><tr><th>#</th><th>Игрок</th><th>Счёт</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <h3>🕒 Последние игры</h3>
+    <ul id="recentList" class="recent"></ul>
+
+    <h3>🎁 Бонусы и предметы</h3>
+    <div class="legend">
+      <span>🪙 Монета — <b>1 очко</b></span>
+      <span>🍒 Вишенка — <b>1</b>, 🍎 Яблоко — <b>2</b>, 🍯 Мёд — <b>3 очка</b></span>
+      <span>🍄 Гриб — <b>+1 жизнь</b> (максимум 5)</span>
+      <span>⭐ Звезда — <b>неуязвимость</b> 8 секунд</span>
+      <span>🧲 Магнит — <b>притягивает</b> бонусы 7 секунд</span>
+      <span>👟 Батут — <b>супер-прыжок</b></span>
+      <span>😠 Гумба — топчи сверху: <b>+5 очков</b></span>
+    </div>
+  </aside>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-box" id="modalBody"></div>
+</div>
+
+<script>
+/* ============================================================
+   1. КОНСТАНТЫ И ТАБЛИЦЫ — сразу после <script>
+   ============================================================ */
+
+/* pieces — таблица фигур бонусов */
+const pieces = [
+  { kind: 'apple',  name: 'Яблоко',  points: 2, color: '#e63946', leaf: '#2a9d8f', r: 12 },
+  { kind: 'honey',  name: 'Мёд',     points: 3, color: '#f4a300', leaf: '#a86f00', r: 13 },
+  { kind: 'cherry', name: 'Вишенка', points: 1, color: '#c1121f', leaf: '#2a9d8f', r: 10 }
+];
+
+/* Темы уровней */
+const THEMES = [
+  { /* 1: зелёные холмы, день */
+    name: 'Зелёные холмы',
+    skyTop: '#69b7eb', skyBottom: '#d5f1ff',
+    hillFar: '#a9c9e8', hillMid: '#8fbf6f',
+    groundTop: '#43b04a', groundBody: '#7a4f2a', groundDark: '#5b3a1e',
+    treeTrunk: '#6b4226', treeLeaf: '#2f9e44', treeLeaf2: '#37b24d',
+    night: false, snow: false
+  },
+  { /* 2: пустыня на закате */
+    name: 'Закатная пустыня',
+    skyTop: '#ff9a5c', skyBottom: '#ffd9a0',
+    hillFar: '#d98d5f', hillMid: '#e0a868',
+    groundTop: '#e8c07a', groundBody: '#c89355', groundDark: '#a97840',
+    treeTrunk: '#7a5a30', treeLeaf: '#4f8f3f', treeLeaf2: '#63a84f',
+    night: false, snow: false
+  },
+  { /* 3: снежная ночь */
+    name: 'Снежная ночь',
+    skyTop: '#0d1b3e', skyBottom: '#27407a',
+    hillFar: '#1d2f57', hillMid: '#31497e',
+    groundTop: '#e8f2ff', groundBody: '#5a6f96', groundDark: '#43557a',
+    treeTrunk: '#3a2c1a', treeLeaf: '#1d5c40', treeLeaf2: '#27735a',
+    night: true, snow: true
+  }
+];
+
+/* Конфигурация уровней: длина, враги, ширина ям */
+const LEVELS = [
+  { len: 3400, enemies: 4, espd: 1.0, pitAdd: 0  },
+  { len: 3900, enemies: 6, espd: 1.25, pitAdd: 35 },
+  { len: 4400, enemies: 8, espd: 1.5, pitAdd: 70 }
+];
+
+/* Размеры мира */
+const CANVAS_W     = 900;
+const CANVAS_H     = 400;
+const GROUND_Y     = 330;
+const CAMERA_OFFSET = 260;
+
+/* Физика (значения — за один кадр при 60 fps) */
+const GRAVITY         = 0.78;
+const JUMP_VELOCITY   = -14.6;
+const SPRING_VELOCITY = -21.5;
+const MAX_FALL_SPEED  = 18;
+const MOVE_ACCEL      = 0.62;
+const AIR_ACCEL       = 0.42;
+const MOVE_MAX        = 6.6;
+const GROUND_FRICTION = 0.80;
+const AIR_FRICTION    = 0.965;
+const COYOTE_FRAMES   = 6;   /* можно прыгнуть чуть позже схода с края   */
+const BUFFER_FRAMES   = 6;   /* прыжок «запоминается» чуть раньше земли  */
+const JUMP_CUT        = 0.45;/* отпустил «вверх» — прыжок ниже           */
+
+/* Габариты Марио */
+const MARIO_W        = 30;
+const MARIO_H        = 48;
+const MARIO_CROUCH_H = 26;
+
+/* Правила игры */
+const START_LIVES  = 3;
+const MAX_LIVES    = 5;
+const TABLE_SIZE   = 10;
+const RECENT_SIZE  = 10;
+const STAR_FRAMES  = 8 * 60;   /* звезда: 8 секунд  */
+const MAGNET_FRAMES= 7 * 60;   /* магнит: 7 секунд */
+const MAGNET_RADIUS= 150;
+const FINAL_LIFE_BONUS = 15;   /* очки за жизнь на финальном финишe */
+const STORAGE_KEY  = 'ompSuperMarioV1';
+
+/* Цвета Марио */
+const COLORS = {
+  marioCap:    '#e03131',
+  marioShirt:  '#e03131',
+  marioOverall:'#1d6fd6',
+  marioSkin:   '#f7c59f',
+  marioShoe:   '#4a2c0a',
+  marioHair:   '#3d2210'
+};
+
+/* ============================================================
+   2. ПЕРЕМЕННЫЕ СОСТОЯНИЯ
+   ============================================================ */
+
+const canvas  = document.getElementById('game');
+const ctx     = canvas.getContext('2d');
+
+const modalEl        = document.getElementById('modal');
+const modalBody      = document.getElementById('modalBody');
+const statusEl       = document.getElementById('status');
+const currentScoreEl = document.getElementById('currentScore');
+const panelPlayerEl  = document.getElementById('panelPlayer');
+const livesLabelEl   = document.getElementById('livesLabel');
+const levelLabelEl   = document.getElementById('levelLabel');
+const hudScoreEl     = document.getElementById('hudScore');
+const comboChipEl    = document.getElementById('comboChip');
+const comboLabelEl   = document.getElementById('comboLabel');
+const progressLabelEl= document.getElementById('progressLabel');
+const btnMuteEl      = document.getElementById('btnMute');
+
+let mario      = null;
+let level      = null;
+let levelIndex = 0;
+let cameraX    = 0;
+let lives      = START_LIVES;
+let score      = 0;
+let gameActive = false;
+let paused     = true;
+let playerName = '';
+let bestTable  = [];
+let recentGames= [];
+let lastPlayerName = '';
+let keys = { left: false, right: false, up: false, down: false };
+let prevUp = false;          /* для отсечки высоты прыжка */
+let lastTime = 0;
+let rafId    = null;
+let toast    = { text: '', until: 0 };
+let gameState = 'awaitName'; /* awaitName | playing | paused | levelDone | over | finished */
+
+let comboN = 0;              /* длина текущей серии сборов      */
+let comboT = 0;              /* сколько кадров ещё живёт серия  */
+let starT  = 0;              /* кадры неуязвимости              */
+let magnetT= 0;              /* кадры магнита                   */
+let particles = [];          /* искры, пыль                     */
+let popups    = [];          /* всплывающие «+N»                */
+let shakeT = 0, shakeMag = 0;/* тряска экрана                   */
+let snow   = [];             /* снежинки (тема 3)               */
+let animClock = 0;           /* общий счётчик анимации          */
+
+/* ============================================================
+   3. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+   ============================================================ */
+
+function aabb(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, function (c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+function rr(c, x, y, w, h, r) {
+  r = Math.min(r, w/2, h/2);
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y,     x + w, y + h, r);
+  c.arcTo(x + w, y + h, x,     y + h, r);
+  c.arcTo(x,     y + h, x,     y,     r);
+  c.arcTo(x,     y,     x + w, y,     r);
+  c.closePath();
+}
+
+function rand(a, b) { return a + Math.random() * (b - a); }
+function randInt(a, b) { return Math.floor(rand(a, b + 1)); }
+
+function setStatus(text) { statusEl.textContent = text; }
+
+function setToast(text, ms) {
+  toast.text = text;
+  toast.until = performance.now() + (ms || 1400);
+}
+
+function modalOpen() { return !modalEl.classList.contains('hidden'); }
+function openModal(html) { modalBody.innerHTML = html; modalEl.classList.remove('hidden'); }
+function closeModal()    { modalEl.classList.add('hidden'); }
+
+function popup(x, y, text, color) {
+  popups.push({ x: x, y: y, text: text, color: color || '#ffd166', t: 0 });
+}
+
+function burst(x, y, color, n, spd) {
+  for (let i = 0; i < (n || 8); i++) {
+    const a = Math.random() * Math.PI * 2;
+    const v = rand(0.5, spd || 2.5);
+    particles.push({
+      x: x, y: y,
+      vx: Math.cos(a) * v, vy: Math.sin(a) * v - 1,
+      g: 0.06, life: 0, maxLife: rand(20, 38),
+      color: color, size: rand(1.5, 3.5)
+    });
+  }
+}
+
+function shake(mag, frames) { shakeMag = mag; shakeT = frames; }
+
+/* ============================================================
+   4. ЗВУК (Web Audio, без файлов)
+   ============================================================ */
+
+let AC = null, masterGain = null;
+let muted = false;
+let musicPlaying = false, musTimer = null, musNext = 0, musStep = 0;
+
+function ensureAudio() {
+  if (AC) return;
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = AC.createGain();
+    masterGain.gain.value = muted ? 0 : 0.5;
+    masterGain.connect(AC.destination);
+  } catch (e) { AC = null; }
+}
+
+function beep(freq, dur, type, vol, slideTo, when) {
+  if (!AC || muted) return;
+  try {
+    const t = when || AC.currentTime;
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type || 'square';
+    o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    g.gain.setValueAtTime(vol || 0.1, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(masterGain);
+    o.start(t); o.stop(t + dur + 0.03);
+  } catch (e) {}
+}
+
+const sfx = {
+  jump:   function () { beep(280, 0.16, 'square', 0.09, 540); },
+  spring: function () { beep(200, 0.28, 'square', 0.11, 900); },
+  coin:   function () {
+    beep(988, 0.06, 'square', 0.08);
+    beep(1319, 0.14, 'square', 0.08, undefined, AC ? AC.currentTime + 0.06 : 0);
+  },
+  bonus:  function () {
+    beep(660, 0.07, 'triangle', 0.12);
+    beep(880, 0.12, 'triangle', 0.12, undefined, AC ? AC.currentTime + 0.06 : 0);
+  },
+  stomp:  function () { beep(240, 0.14, 'square', 0.12, 90); },
+  hurt:   function () { beep(320, 0.32, 'sawtooth', 0.12, 70); },
+  power:  function () {
+    [523, 659, 784, 1047].forEach(function (f, i) {
+      beep(f, 0.1, 'square', 0.09, undefined, AC ? AC.currentTime + i * 0.07 : 0);
+    });
+  },
+  win: function () {
+    [523, 659, 784, 1047, 784, 1047].forEach(function (f, i) {
+      beep(f, 0.14, 'square', 0.1, undefined, AC ? AC.currentTime + i * 0.11 : 0);
+    });
+  },
+  over: function () {
+    [440, 349, 262, 196].forEach(function (f, i) {
+      beep(f, 0.22, 'triangle', 0.12, undefined, AC ? AC.currentTime + i * 0.16 : 0);
+    });
+  }
+};
+
+/* лёгкий чиптюн-луп: мелодия + бас, частоты в Гц, 0 = пауза */
+const MELODY = [
+  523,0,659,0,784,0,659,0, 587,0,659,0,523,0,0,0,
+  523,0,659,0,784,0,880,0, 1047,0,880,784,659,0,587,0
+];
+const BASSLINE = [131,0,98,0,110,0,87,0, 131,0,98,0,110,0,131,0];
+const STEP_DUR = 0.155;
+
+function noteAt(freq, t, dur, type, vol) {
+  if (!AC) return;
+  try {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(masterGain);
+    o.start(t); o.stop(t + dur + 0.02);
+  } catch (e) {}
+}
+
+function musicTick() {
+  if (!AC || !musicPlaying) return;
+  while (musNext < AC.currentTime + 0.30) {
+    const m = MELODY[musStep % MELODY.length];
+    if (m) noteAt(m, musNext, 0.13, 'square', 0.045);
+    const b = BASSLINE[Math.floor(musStep / 2) % BASSLINE.length];
+    if (b) noteAt(b, musNext, 0.22, 'triangle', 0.06);
+    musNext += STEP_DUR;
+    musStep++;
+  }
+}
+
+function startMusic() {
+  ensureAudio();
+  if (!AC || musicPlaying) return;
+  musicPlaying = true;
+  musNext = AC.currentTime + 0.06;
+  musStep = 0;
+  if (musTimer === null) musTimer = setInterval(musicTick, 100);
+}
+
+function stopMusic() { musicPlaying = false; }
+
+function toggleMute() {
+  muted = !muted;
+  if (masterGain) masterGain.gain.value = muted ? 0 : 0.5;
+  btnMuteEl.textContent = muted ? '🔇' : '🔊';
+  saveStorage();
+}
+
+/* первый жест пользователя — активируем аудио */
+function unlockAudio() {
+  ensureAudio();
+  if (AC && AC.state === 'suspended') { try { AC.resume(); } catch (e) {} }
+}
+window.addEventListener('pointerdown', unlockAudio);
+window.addEventListener('keydown', unlockAudio);
+
+/* ============================================================
+   5. СОХРАНЕНИЕ / ЗАГРУЗКА
+   ============================================================ */
+
+function isValidRecord(r) {
+  return r && typeof r.name === 'string' && typeof r.score === 'number';
+}
+
+function sortTable() {
+  bestTable.sort(function (a, b) {
+    return b.score - a.score || (a.time || 0) - (b.time || 0);
+  });
+  if (bestTable.length > TABLE_SIZE) bestTable.length = TABLE_SIZE;
+}
+
+function loadStorage() {
+  let raw = null;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+  if (!raw) { bestTable = []; recentGames = []; return; }
+  try {
+    const data = JSON.parse(raw);
+    bestTable    = Array.isArray(data.table)  ? data.table.filter(isValidRecord)  : [];
+    recentGames  = Array.isArray(data.recent) ? data.recent.filter(isValidRecord) : [];
+    lastPlayerName = typeof data.lastName === 'string' ? data.lastName : '';
+    muted = !!data.muted;
+  } catch (e) { bestTable = []; recentGames = []; }
+  sortTable();
+  btnMuteEl.textContent = muted ? '🔇' : '🔊';
+}
+
+function saveStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      table: bestTable, recent: recentGames,
+      lastName: lastPlayerName, muted: muted
+    }));
+  } catch (e) {}
+}
+
+function recordScore(name, value) {
+  const rec = { name: name, score: value, time: Date.now(),
+                date: new Date().toLocaleString('ru-RU') };
+  recentGames.unshift(rec);
+  if (recentGames.length > RECENT_SIZE) recentGames.length = RECENT_SIZE;
+  bestTable.push(rec);
+  sortTable();
+  lastPlayerName = name;
+  saveStorage();
+  renderTable(); renderRecent();
+}
+
+/* ============================================================
+   6. ОТРИСОВКА ТАБЛИЦ И HUD
+   ============================================================ */
+
+function renderTable() {
+  const tbody = document.querySelector('#scoreTable tbody');
+  if (!bestTable.length) {
+    tbody.innerHTML = '<tr><td colspan="3" class="empty">Пока нет результатов</td></tr>';
+    return;
+  }
+  tbody.innerHTML = bestTable.map(function (rec, i) {
+    return '<tr><td>' + (i + 1) + '</td><td>' + escapeHtml(rec.name) +
+           '</td><td>' + rec.score + '</td></tr>';
+  }).join('');
+}
+
+function renderRecent() {
+  const ul = document.getElementById('recentList');
+  if (!recentGames.length) {
+    ul.innerHTML = '<li class="empty">Пока не сыграно ни одной игры</li>';
+    return;
+  }
+  ul.innerHTML = recentGames.map(function (r) {
+    return '<li><span>' + escapeHtml(r.name) + '</span><span class="rs">' + r.score + '</span></li>';
+  }).join('');
+}
+
+function tableRowsHtml() {
+  if (!bestTable.length) return '<tr><td colspan="3" class="empty">Пока нет результатов</td></tr>';
+  return bestTable.map(function (rec, i) {
+    return '<tr><td>' + (i+1) + '</td><td>' + escapeHtml(rec.name) +
+           '</td><td>' + rec.score + '</td></tr>';
+  }).join('');
+}
+
+function recentRowsHtml() {
+  if (!recentGames.length) return '<li class="empty">Нет данных</li>';
+  return recentGames.map(function (r) {
+    return '<li><span>' + escapeHtml(r.name) + '</span><span class="rs">' + r.score + '</span></li>';
+  }).join('');
+}
+
+function comboMult() { return Math.min(5, 1 + Math.floor(comboN / 4)); }
+
+function updateHud() {
+  currentScoreEl.textContent = score;
+  hudScoreEl.textContent     = score;
+  livesLabelEl.textContent   = lives > 0 ? '❤'.repeat(lives) : '—';
+  levelLabelEl.textContent   = (levelIndex + 1) + '/' + LEVELS.length;
+  panelPlayerEl.textContent  = playerName || '—';
+  const mult = comboMult();
+  if (comboN > 0 && mult > 1) {
+    comboChipEl.style.display = '';
+    comboLabelEl.textContent  = '×' + mult + ' (' + comboN + ')';
+  } else {
+    comboChipEl.style.display = 'none';
+  }
+  const pct = mario && level ? Math.min(100, Math.max(0, Math.round(mario.x / level.finishX * 100))) : 0;
+  progressLabelEl.textContent = pct + '%';
+}
+
+/* ============================================================
+   7. ГЕНЕРАЦИЯ УРОВНЯ
+   ============================================================ */
+
+function randomPiece() {
+  return pieces[Math.floor(Math.random() * pieces.length)];
+}
+
+function makeBonus(piece, x, y) {
+  return { piece: piece, x: x, y: y, r: piece.r,
+           taken: false, bob: Math.random() * Math.PI * 2, baseY: y };
+}
+
+function makeCoin(x, y) {
+  return { kind: 'coin', x: x, y: y, r: 9,
+           taken: false, bob: Math.random() * Math.PI * 2, baseY: y, spin: Math.random() * 6 };
+}
+
+function makePowerup(kind, x, y) {
+  return { kind: kind, x: x, y: y, r: 13,
+           taken: false, bob: Math.random() * Math.PI * 2, baseY: y };
+}
+
+/* выбор типа следующего объекта; li — номер уровня (0..2) */
+function pickFeature(last, li) {
+  const weights = [
+    { k: 'stone',     w: 11 },
+    { k: 'tree',      w: 10 },
+    { k: 'well',      w: 8  },
+    { k: 'pipe',      w: 10 },
+    { k: 'pit',       w: 11 + li * 3 },
+    { k: 'overhead',  w: 9  },
+    { k: 'bridge',    w: 7  },
+    { k: 'crate',     w: 8  },
+    { k: 'cluster',   w: 6  },
+    { k: 'prun',      w: 4 + li * 2 },   /* платформы над пропастью */
+    { k: 'springGap', w: 2 + li },       /* батут + широкая яма     */
+    { k: 'flat',      w: 8  }            /* ровная передышка        */
+  ].filter(function (o) { return o.k !== last; });
+
+  const total = weights.reduce(function (s, o) { return s + o.w; }, 0);
+  let r = Math.random() * total;
+  for (const o of weights) {
+    r -= o.w;
+    if (r <= 0) return o.k;
+  }
+  return weights[0].k;
+}
+
+function generateLevel(li) {
+  const cfg  = LEVELS[li];
+  const theme = THEMES[li];
+  const solids = [], bonuses = [], coins = [], powerups = [],
+        enemies = [], pits = [], flats = [];
+  let starSpot = null;
+  const features = [];
+
+  const startFlat = 300;
+  let x = startFlat;
+  let last = '';
+
+  let featureCount = 0;
+
+  while (x < cfg.len - 380) {
+    let kind = pickFeature(last, li);
+    /* каждая 4-я фича — гарантированная ровная площадка (враги/монеты/усиления) */
+    if (featureCount % 4 === 3 && kind !== 'flat') kind = 'flat';
+    featureCount++;
+    last = kind;
+    const f = { kind: kind, x: x };
+    const gapStart = x;
+
+    if (kind === 'stone') {
+      f.w = 34; f.h = 28;
+      x += 180 + randInt(0, 70);
+      f.bonusPiece = randomPiece();
+    }
+    else if (kind === 'tree') {
+      f.w = 34; f.h = 104;
+      x += 210 + randInt(0, 70);
+    }
+    else if (kind === 'well') {
+      f.w = 58; f.h = 36;
+      x += 200 + randInt(0, 70);
+      f.bonusPiece = randomPiece();
+    }
+    else if (kind === 'pipe') {
+      f.w = 46; f.h = 60;
+      x += 200 + randInt(0, 70);
+      f.bonusPiece = randomPiece();
+    }
+    else if (kind === 'crate') {
+      f.w = 40; f.h = 40;
+      x += 190 + randInt(0, 60);
+      f.bonusPiece = randomPiece();
+    }
+    else if (kind === 'overhead') {
+      f.w = 88;
+      x += 240 + randInt(0, 60);
+    }
+    else if (kind === 'pit') {
+      f.w = 90 + randInt(0, 70) + cfg.pitAdd;
+      f.hasBridge = Math.random() < 0.35;
+      f.bridgeY = GROUND_Y - 70;
+      x += f.w + 190 + randInt(0, 80);
+      f.bonusPiece = randomPiece();
+      pits.push({ x: f.x, w: f.w });
+    }
+    else if (kind === 'bridge') {
+      f.w = 150;
+      f.bridgeY = GROUND_Y - 70;
+      pits.push({ x: f.x, w: f.w });
+      x += f.w + 190 + randInt(0, 60);
+      f.bonusPiece = randomPiece();
+    }
+    else if (kind === 'cluster') {
+      f.w = 0;
+      x += 190 + randInt(0, 60);
+      f.clusterPieces = [randomPiece(), randomPiece(), randomPiece()];
+    }
+    else if (kind === 'prun') {
+      /* пропасть с парящими платформами */
+      f.w = 250 + randInt(0, 90) + cfg.pitAdd;
+      pits.push({ x: f.x, w: f.w });
+      const n = 3;
+      const usable = f.w - 40;
+      const step = usable / n;
+      f.plats = [];
+      const heights = [GROUND_Y - 55, GROUND_Y - 95, GROUND_Y - 70];
+      for (let i = 0; i < n; i++) {
+        const px = f.x + 20 + i * step + (step - 76) / 2;
+        const py = heights[i % 3];
+        f.plats.push({ x: px, y: py });
+        solids.push({ x: px, y: py, w: 76, h: 14, kind: 'platFloat' });
+        coins.push(makeCoin(px + 38 - 9, py - 34));
+      }
+      if (li > 0 && Math.random() < 0.5) {
+        /* движущаяся платформа на маршруте */
+        const mp = {
+          x: f.x + f.w / 2 - 45, y: GROUND_Y - 130, w: 90, h: 14,
+          kind: 'platMove', axis: 'y', range: 45, speed: 0.028,
+          phase: Math.random() * Math.PI * 2,
+          baseX: f.x + f.w / 2 - 45, baseY: GROUND_Y - 130, dx: 0, dy: 0
+        };
+        solids.push(mp);
+        coins.push(makeCoin(mp.baseX + 45 - 9, GROUND_Y - 190));
+      }
+      if (!starSpot) starSpot = { x: f.x + f.w / 2 - 13, y: GROUND_Y - 175 };
+      x += f.w + 200 + randInt(0, 60);
+    }
+    else if (kind === 'springGap') {
+      f.w = 290 + randInt(0, 70) + cfg.pitAdd;
+      pits.push({ x: f.x, w: f.w });
+      f.springX = f.x - 70;
+      solids.push({ x: f.springX, y: GROUND_Y - 16, w: 36, h: 16, kind: 'spring', anim: 0 });
+      /* монеты дугой над ямой */
+      for (let i = 0; i < 5; i++) {
+        const t = i / 4;
+        coins.push(makeCoin(f.x + 30 + t * (f.w - 60),
+                            GROUND_Y - 150 - Math.sin(t * Math.PI) * 60));
+      }
+      x += f.w + 210 + randInt(0, 60);
+    }
+    else if (kind === 'flat') {
+      f.w = 260 + randInt(0, 140);
+      x += f.w;
+    }
+
+    /* ровные участки — для врагов и усилений */
+    if (kind === 'flat' && f.w >= 240) {
+      flats.push({ x: gapStart, w: f.w });
+    }
+
+    f.endX = x;
+    features.push(f);
+  }
+
+  /* сортируем ямы и строим землю между ними */
+  pits.sort(function (a, b) { return a.x - b.x; });
+  let cursor = 0;
+  for (const p of pits) {
+    if (p.x > cursor) {
+      solids.push({ x: cursor, y: GROUND_Y, w: p.x - cursor, h: 280, kind: 'ground' });
+    }
+    cursor = Math.max(cursor, p.x + p.w);
+  }
+  solids.push({ x: cursor, y: GROUND_Y, w: cfg.len + 800 - cursor, h: 280, kind: 'ground' });
+
+  /* второй проход: препятствия-солиды и бонусы */
+  for (const f of features) {
+    if (f.kind === 'stone' || f.kind === 'tree' || f.kind === 'well' ||
+        f.kind === 'pipe'  || f.kind === 'crate') {
+      solids.push({ x: f.x, y: GROUND_Y - f.h, w: f.w, h: f.h, kind: f.kind });
+    }
+    else if (f.kind === 'overhead') {
+      solids.push({ x: f.x, y: GROUND_Y - 150, w: f.w, h: 120, kind: 'overhead' });
+    }
+    else if (f.kind === 'pit' && f.hasBridge) {
+      solids.push({ x: f.x + 8, y: f.bridgeY, w: f.w - 16, h: 14, kind: 'bridge' });
+    }
+    else if (f.kind === 'bridge') {
+      solids.push({ x: f.x, y: f.bridgeY, w: f.w, h: 14, kind: 'bridge' });
+    }
+
+    /* одиночный бонус над препятствием */
+    if (f.bonusPiece) {
+      const bx = f.x + (f.w || 60) / 2 - 12;
+      let by;
+      if (f.kind === 'pit' || f.kind === 'bridge') by = GROUND_Y - 170;
+      else if (f.kind === 'overhead')             by = GROUND_Y - 190;
+      else                                        by = GROUND_Y - f.h - 60;
+      bonuses.push(makeBonus(f.bonusPiece, bx, by));
+    }
+
+    /* гроздь из трёх бонусов */
+    if (f.clusterPieces) {
+      const cx = f.x + 60;
+      f.clusterPieces.forEach(function (p, i) {
+        bonuses.push(makeBonus(p, cx + i * 48, GROUND_Y - 110 - (i % 2) * 26));
+      });
+    }
+  }
+
+  /* немного бонусов «на ровном месте» */
+  for (let bx = 500; bx < cfg.len - 400; bx += 620) {
+    if (Math.random() < 0.7) {
+      bonuses.push(makeBonus(randomPiece(), bx, GROUND_Y - 120 - Math.random() * 40));
+    }
+  }
+
+  /* монеты дугами по всей трассе */
+  for (let bx = 520; bx < cfg.len - 420; bx += 460) {
+    if (Math.random() < 0.6) {
+      for (let i = 0; i < 3; i++) {
+        coins.push(makeCoin(bx + i * 34, GROUND_Y - 54 - (i === 1 ? 34 : 0)));
+      }
+    }
+  }
+
+  return {
+    solids: solids, bonuses: bonuses, coins: coins,
+    powerups: powerups, enemies: enemies, pits: pits,
+    flats: flats, starSpot: starSpot,
+    theme: theme, len: cfg.len, finishX: cfg.len - 60
+  };
+}
+
+/* ============================================================
+   8. МАРИО
+   ============================================================ */
+
+function createMario() {
+  return {
+    x: 60, y: GROUND_Y - MARIO_H,
+    w: MARIO_W, h: MARIO_H,
+    vx: 0, vy: 0,
+    facing: 1,
+    onGround: false,
+    crouching: false,
+    walkFrame: 0,
+    animTime: 0,
+    coyote: 0,
+    jumpBuf: 0,
+    carrier: null,
+    dustT: 0
+  };
+}
+
+function applyInput(dt60) {
+  const m = mario;
+  if (!m) return;
+
+  /* приседание — только на земле */
+  m.crouching = keys.down && m.onGround;
+
+  /* разгон по горизонтали */
+  const accel = m.onGround ? MOVE_ACCEL : AIR_ACCEL;
+  const input = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+
+  if (input !== 0) {
+    m.vx += input * accel * dt60;
+    m.facing = input;
+  } else {
+    const fr = m.onGround ? GROUND_FRICTION : AIR_FRICTION;
+    m.vx *= Math.pow(fr, dt60);
+    if (Math.abs(m.vx) < 0.05) m.vx = 0;
+  }
+
+  if (m.vx >  MOVE_MAX) m.vx =  MOVE_MAX;
+  if (m.vx < -MOVE_MAX) m.vx = -MOVE_MAX;
+
+  /* «койот» и буфер прыжка */
+  if (m.onGround) m.coyote = COYOTE_FRAMES;
+  else if (m.coyote > 0) m.coyote -= dt60;
+
+  if (keys.up && !prevUp) m.jumpBuf = BUFFER_FRAMES;
+  else if (m.jumpBuf > 0) m.jumpBuf -= dt60;
+
+  /* отпуск «вверх» срезает прыжок */
+  if (!keys.up && prevUp && m.vy < -4) m.vy *= JUMP_CUT;
+  prevUp = keys.up;
+
+  if (m.jumpBuf > 0 && m.coyote > 0 && !m.crouching) {
+    m.vy = JUMP_VELOCITY;
+    m.onGround = false;
+    m.coyote = 0;
+    m.jumpBuf = 0;
+    m.carrier = null;
+    sfx.jump();
+    burst(m.x + m.w / 2, m.y + m.h, '#cbb89a', 5, 1.4);
+  }
+
+  /* гравитация */
+  m.vy += GRAVITY * dt60;
+  if (m.vy > MAX_FALL_SPEED) m.vy = MAX_FALL_SPEED;
+}
+
+/* Перемещение с разрешением коллизий по осям */
+function moveAndCollide(m, solids, dt60) {
+  /* ----- горизонталь ----- */
+  m.x += m.vx * dt60;
+  for (const s of solids) {
+    if (s.kind === 'spring') continue;
+    if (aabb(m, s)) {
+      if (m.vx > 0)      m.x = s.x - m.w;
+      else if (m.vx < 0) m.x = s.x + s.w;
+      m.vx = 0;
+    }
+  }
+
+  /* ----- вертикаль ----- */
+  m.onGround = false;
+  m.carrier = null;
+  m.y += m.vy * dt60;
+  for (const s of solids) {
+    if (aabb(m, s)) {
+      if (m.vy >= 0) {
+        /* приземление сверху */
+        m.y = s.y - m.h;
+        if (s.kind === 'spring') {
+          m.vy = SPRING_VELOCITY;
+          s.anim = 10;
+          sfx.spring();
+          burst(s.x + s.w / 2, s.y, '#ffd166', 8, 2);
+          shake(3, 10);
+        } else {
+          m.vy = 0;
+          m.onGround = true;
+          if (s.kind === 'platMove' || s.kind === 'platFloat') m.carrier = s;
+        }
+      } else if (m.vy < 0) {
+        m.y = s.y + s.h;
+        m.vy = 0;
+      }
+    }
+  }
+}
+
+/* Проверка падения в яму */
+function checkPitFall() {
+  const m = mario;
+  if (m.y > CANVAS_H + 60) return true;
+  return false;
+}
+
+/* ============================================================
+   9. СБОР БОНУСОВ, МОНЕТ, УСИЛЕНИЙ
+   ============================================================ */
+
+function circleRectPickup(m, px, py, r) {
+  const closestX = Math.max(m.x, Math.min(px, m.x + m.w));
+  const closestY = Math.max(m.y, Math.min(py, m.y + m.h));
+  const dx = px - closestX, dy = py - closestY;
+  return dx * dx + dy * dy < r * r;
+}
+
+function addPickupPoints(base, x, y, label) {
+  comboN += 1;
+  comboT = 130;
+  const mult = comboMult();
+  const pts = base * mult;
+  score += pts;
+  popup(x, y - 14, '+' + pts + (mult > 1 ? ' ×' + mult : '') + (label ? ' ' + label : ''),
+        mult > 1 ? '#ff9a5c' : '#ffd166');
+  updateHud();
+  return pts;
+}
+
+function collectPickups() {
+  const m = mario;
+  const mx = m.x + m.w / 2, my = m.y + m.h / 2;
+  const magnetOn = magnetT > 0;
+
+  /* бонусы (вишня/яблоко/мёд) */
+  for (const b of level.bonuses) {
+    if (b.taken) continue;
+    if (magnetOn) {
+      const d = Math.hypot(b.x - mx, b.baseY - my);
+      if (d < MAGNET_RADIUS && d > 4) {
+        b.x += (mx - b.x) * 0.14;
+        b.baseY += (my - b.baseY) * 0.14;
+      }
+    }
+    if (circleRectPickup(m, b.x, b.baseY, b.r + 2)) {
+      b.taken = true;
+      addPickupPoints(b.piece.points, b.x, b.baseY, b.piece.name);
+      burst(b.x, b.baseY, b.piece.color, 8, 2.2);
+      sfx.bonus();
+    }
+  }
+
+  /* монеты */
+  for (const c of level.coins) {
+    if (c.taken) continue;
+    if (magnetOn) {
+      const d = Math.hypot(c.x - mx, c.baseY - my);
+      if (d < MAGNET_RADIUS && d > 4) {
+        c.x += (mx - c.x) * 0.16;
+        c.baseY += (my - c.baseY) * 0.16;
+      }
+    }
+    if (circleRectPickup(m, c.x, c.baseY, c.r + 2)) {
+      c.taken = true;
+      addPickupPoints(1, c.x, c.baseY);
+      burst(c.x, c.baseY, '#ffd166', 6, 2);
+      sfx.coin();
+    }
+  }
+
+  /* усиления */
+  for (const p of level.powerups) {
+    if (p.taken) continue;
+    if (circleRectPickup(m, p.x, p.baseY, p.r + 3)) {
+      p.taken = true;
+      sfx.power();
+      if (p.kind === 'mushroom') {
+        if (lives < MAX_LIVES) lives++;
+        popup(p.x, p.baseY - 14, '+❤ Гриб!', '#7ee787');
+        burst(p.x, p.baseY, '#e03131', 12, 2.6);
+      } else if (p.kind === 'star') {
+        starT = STAR_FRAMES;
+        popup(p.x, p.baseY - 14, '⭐ Неуязвимость!', '#ffd166');
+        burst(p.x, p.baseY, '#ffd166', 16, 3);
+      } else if (p.kind === 'magnet') {
+        magnetT = MAGNET_FRAMES;
+        popup(p.x, p.baseY - 14, '🧲 Магнит!', '#74c0fc');
+        burst(p.x, p.baseY, '#74c0fc', 12, 2.6);
+      }
+      updateHud();
+    }
+  }
+}
+
+/* ============================================================
+   10. ВРАГИ И ДВИЖУЩИЕСЯ ПЛАТФОРМЫ
+   ============================================================ */
+
+function updatePlatforms(dt60) {
+  for (const s of level.solids) {
+    if (s.kind !== 'platMove') continue;
+    const prevX = s.x, prevY = s.y;
+    s.phase += s.speed * dt60;
+    if (s.axis === 'x') s.x = s.baseX + Math.sin(s.phase) * s.range;
+    else                s.y = s.baseY + Math.sin(s.phase) * s.range;
+    s.dx = s.x - prevX;
+    s.dy = s.y - prevY;
+  }
+  /* переносим Марио вместе с платформой */
+  if (mario && mario.carrier) {
+    mario.x += mario.carrier.dx || 0;
+    mario.y += mario.carrier.dy || 0;
+  }
+}
+
+function updateEnemies(dt60) {
+  const m = mario;
+  for (let i = level.enemies.length - 1; i >= 0; i--) {
+    const e = level.enemies[i];
+    if (e.dead) {
+      e.squash -= dt60 / 26;
+      if (e.squash <= 0) level.enemies.splice(i, 1);
+      continue;
+    }
+    e.x += e.vx * dt60;
+    if (e.x < e.x0) { e.x = e.x0; e.vx = Math.abs(e.vx); }
+    if (e.x > e.x1 - e.w) { e.x = e.x1 - e.w; e.vx = -Math.abs(e.vx); }
+    e.phase += 0.15 * dt60;
+
+    /* столкновение с Марио */
+    if (gameState === 'playing' && aabb(m, e)) {
+      if (starT > 0) {
+        killEnemy(e, 5);
+        continue;
+      }
+      const fromTop = m.vy > 1.5 && (m.y + m.h - e.y) < e.h * 0.7;
+      if (fromTop) {
+        killEnemy(e, 5);
+        m.vy = keys.up ? -13 : -9.5;
+      } else {
+        hurtMario();
+        return;
+      }
+    }
+  }
+}
+
+function killEnemy(e, pts) {
+  e.dead = true;
+  e.squash = 1;
+  addPickupPoints(pts, e.x + e.w / 2, e.y, 'гумба');
+  burst(e.x + e.w / 2, e.y + e.h / 2, '#8a5a2b', 10, 2.4);
+  sfx.stomp();
+  shake(4, 12);
+}
+
+/* ============================================================
+   11. ИГРОВОЙ ЦИКЛ: ОБНОВЛЕНИЕ
+   ============================================================ */
+
+function update(dt60) {
+  if (!mario || !level) return;
+  const m = mario;
+
+  updatePlatforms(dt60);
+  applyInput(dt60);
+
+  /* рост/приседание */
+  const targetH = m.crouching ? MARIO_CROUCH_H : MARIO_H;
+  if (targetH !== m.h) {
+    const bottom = m.y + m.h;
+    m.h = targetH;
+    m.y = bottom - m.h;
+    for (const s of level.solids) {
+      if (aabb(m, s) && s.kind === 'overhead') m.y = s.y + s.h;
+    }
+  }
+
+  const wasAir = !m.onGround;
+  const oldVy = m.vy;
+  moveAndCollide(m, level.solids, dt60);
+
+  /* пыль при посадке и беге */
+  if (wasAir && m.onGround && oldVy > 6) {
+    burst(m.x + m.w / 2, m.y + m.h, '#cbb89a', 7, 1.8);
+  }
+  if (m.onGround && Math.abs(m.vx) > 4) {
+    m.dustT -= dt60;
+    if (m.dustT <= 0) {
+      m.dustT = 5;
+      particles.push({
+        x: m.x + m.w / 2 - m.facing * 10, y: m.y + m.h - 2,
+        vx: -m.facing * rand(0.3, 0.9), vy: -rand(0.2, 0.7),
+        g: 0.01, life: 0, maxLife: 18, color: 'rgba(200,190,170,0.7)', size: 2
+      });
+    }
+  }
+
+  /* анимация ходьбы */
+  if (m.onGround && Math.abs(m.vx) > 0.2) {
+    m.walkFrame += Math.abs(m.vx) * 0.16 * dt60;
+  } else {
+    m.walkFrame *= 0.85;
+  }
+
+  collectPickups();
+  if (gameState !== 'playing') return;
+
+  updateEnemies(dt60);
+  if (gameState !== 'playing') return;
+
+  /* таймеры эффектов */
+  if (starT > 0) {
+    starT -= dt60;
+    if (Math.random() < 0.3) {
+      particles.push({
+        x: m.x + rand(0, m.w), y: m.y + rand(0, m.h),
+        vx: rand(-0.5, 0.5), vy: -rand(0.3, 1),
+        g: 0, life: 0, maxLife: 20,
+        color: 'hsl(' + (animClock * 12 % 360) + ',90%,65%)', size: 2.4
+      });
+    }
+    if (starT <= 0) setToast('Звезда закончилась!', 900);
+  }
+  if (magnetT > 0) magnetT -= dt60;
+  if (comboT > 0) {
+    comboT -= dt60;
+    if (comboT <= 0) { comboN = 0; updateHud(); }
+  }
+
+  /* потеря жизни */
+  if (checkPitFall()) { loseLife(); return; }
+
+  /* не улетаем за левый край */
+  if (m.x < 0) { m.x = 0; m.vx = 0; }
+
+  /* финиш уровня */
+  if (m.x + m.w >= level.finishX) {
+    finishLevel();
+    return;
+  }
+
+  /* камера с опережением по скорости */
+  const targetCam = m.x - CAMERA_OFFSET + m.vx * 14;
+  cameraX += (targetCam - cameraX) * 0.15 * dt60;
+  const maxCam = level.len + 500 - CANVAS_W;
+  if (cameraX < 0) cameraX = 0;
+  if (cameraX > maxCam) cameraX = maxCam;
+
+  updateHud();
+}
+
+/* ============================================================
+   12. ЖИЗНИ, УРОВНИ, ФИНАЛ
+   ============================================================ */
+
+function loseLife() {
+  lives -= 1;
+  sfx.hurt();
+  shake(7, 22);
+  updateHud();
+
+  if (lives <= 0) {
+    gameOver();
+    return;
+  }
+  setToast('Жизнь потеряна! Уровень с начала. Осталось: ' + lives, 2000);
+  startLevel(levelIndex);
+}
+
+function startLevel(li) {
+  levelIndex = li;
+  level = generateLevel(li);
+  spawnLevelEntities();
+  mario = createMario();
+  cameraX = 0;
+  comboN = 0; comboT = 0;
+  starT = 0; magnetT = 0;
+  particles = []; popups = [];
+  paused = false;
+  gameActive = true;
+  gameState = 'playing';
+  startMusic();
+  updateHud();
+  setStatus('Уровень ' + (li + 1) + ' — ' + THEMES[li].name + '. Вперёд!');
+}
+
+function newGame() {
+  lives = START_LIVES;
+  score = 0;
+  startLevel(0);
+}
+
+/* расстановка врагов, монет и усилений по ровным местам */
+function spawnLevelEntities() {
+  const cfg = LEVELS[levelIndex];
+  const flats = (level.flats || []).slice();
+  /* перемешиваем */
+  for (let i = flats.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = flats[i]; flats[i] = flats[j]; flats[j] = t;
+  }
+
+  /* враги — на широких ровных участках */
+  let placed = 0, fi = 0;
+  while (placed < cfg.enemies && flats.length) {
+    const f = flats[fi % flats.length];
+    fi++;
+    if (f.w < 200) { if (fi > flats.length * 2) break; continue; }
+    const margin = 26;
+    const x0 = f.x + margin, x1 = f.x + f.w - margin;
+    if (x1 - x0 < 120) continue;
+    const ex = rand(x0, x1 - 34);
+    level.enemies.push({
+      x: ex, y: GROUND_Y - 28, w: 32, h: 28,
+      vx: (Math.random() < 0.5 ? -1 : 1) * 1.1 * cfg.espd,
+      x0: x0, x1: x1,
+      dead: false, squash: 1, phase: Math.random() * 6
+    });
+    placed++;
+    if (fi > flats.length * 3) break;
+  }
+
+  /* усиления: гриб и магнит на ровных местах, звезда — над платформами */
+  if (flats.length >= 1) {
+    const f = flats[0];
+    level.powerups.push(makePowerup('mushroom', f.x + f.w / 2 - 13, GROUND_Y - 70));
+  }
+  if (flats.length >= 2) {
+    const f = flats[1];
+    level.powerups.push(makePowerup('magnet', f.x + f.w / 2 - 13, GROUND_Y - 80));
+  }
+  const spot = level.starSpot;
+  if (spot) level.powerups.push(makePowerup('star', spot.x, spot.y));
+  else if (flats.length >= 3) {
+    const f = flats[2];
+    level.powerups.push(makePowerup('star', f.x + f.w / 2 - 13, GROUND_Y - 130));
+  }
+
+  /* монеты дугами на ровных местах */
+  for (const f of flats) {
+    if (f.w < 240) continue;
+    if (Math.random() < 0.55) {
+      const n = randInt(3, 5);
+      const cx = f.x + f.w / 2 - (n - 1) * 17;
+      for (let i = 0; i < n; i++) {
+        const t = n > 1 ? i / (n - 1) : 0.5;
+        coinsPush(cx + i * 34, GROUND_Y - 70 - Math.sin(t * Math.PI) * 45);
+      }
+    }
+  }
+}
+
+function coinsPush(x, y) { level.coins.push(makeCoin(x, y)); }
+
+function levelDoneRows() {
+  return '<h3>🏆 Таблица лучших</h3>' +
+    '<table><thead><tr><th>#</th><th>Игрок</th><th>Счёт</th></tr></thead>' +
+    '<tbody>' + tableRowsHtml() + '</tbody></table>';
+}
+
+function finishLevel() {
+  if (gameState !== 'playing') return;
+  gameState = 'levelDone';
+  gameActive = false;
+  paused = true;
+  stopMusic();
+  sfx.win();
+
+  const isLast = levelIndex === LEVELS.length - 1;
+  if (isLast) {
+    const bonus = lives * FINAL_LIFE_BONUS;
+    const total = score + bonus;
+    recordScore(playerName, total);
+    updateHud();
+    setToast('🏁 Финиш! ' + score + ' + ' + bonus + ' = ' + total, 4000);
+    openModal(
+      '<h2>🏁 Победа! Все уровни пройдены!</h2>' +
+      '<p>Игрок <b>' + escapeHtml(playerName) + '</b> прошёл все ' + LEVELS.length + ' уровня!</p>' +
+      '<p>Очки за уровень: <b>' + score + '</b><br>' +
+      'Бонус за оставшиеся жизни (' + lives + ' × ' + FINAL_LIFE_BONUS + '): <b>' + bonus + '</b><br>' +
+      'Итоговый счёт: <b style="color:#ffd166;font-size:20px">' + total + '</b></p>' +
+      levelDoneRows() +
+      '<div class="modal-actions"><button id="btnAgainFinal">Играть снова</button></div>'
+    );
+    document.getElementById('btnAgainFinal').onclick = function () {
+      closeModal(); newGame();
+    };
+  } else {
+    openModal(
+      '<h2>🏁 Уровень ' + (levelIndex + 1) + ' пройден!</h2>' +
+      '<p>Очки: <b>' + score + '</b> · Жизни: <b>' + '❤'.repeat(lives) + '</b></p>' +
+      '<p>Следующий уровень: <b>' + THEMES[levelIndex + 1].name + '</b> — будет сложнее!</p>' +
+      '<div class="modal-actions"><button id="btnNextLevel">Дальше →</button></div>'
+    );
+    document.getElementById('btnNextLevel').onclick = function () {
+      closeModal();
+      startLevel(levelIndex + 1);
+    };
+  }
+}
+
+function gameOver() {
+  gameState = 'over';
+  gameActive = false;
+  paused = true;
+  stopMusic();
+  sfx.over();
+  recordScore(playerName, score);
+  updateHud();
+  setToast('💀 Игра окончена. Счёт: ' + score, 3000);
+  openModal(
+    '<h2>💀 Игра окончена</h2>' +
+    '<p>Игрок <b>' + escapeHtml(playerName) + '</b> добрался до уровня ' + (levelIndex + 1) +
+    ' и набрал <b style="color:#ffd166">' + score + '</b> очков.</p>' +
+    levelDoneRows() +
+    '<div class="modal-actions"><button id="btnAgainOver">Ещё раз</button></div>'
+  );
+  document.getElementById('btnAgainOver').onclick = function () {
+    closeModal(); newGame();
+  };
+}
+function hurtMario() {
+  loseLife();
+}
+
+/* ============================================================
+   13. ОТРИСОВКА: ФОН И ПАРALLAX
+   ============================================================ */
+
+function drawSky() {
+  const th = level ? level.theme : THEMES[0];
+  const g = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+  g.addColorStop(0, th.skyTop);
+  g.addColorStop(1, th.skyBottom);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  if (th.night) {
+    /* звёзды и луна */
+    for (let i = 0; i < 46; i++) {
+      const sx = (i * 197 + 60) % CANVAS_W;
+      const sy = (i * 83) % 200 + 12;
+      const tw = 0.5 + 0.5 * Math.sin(animClock * 0.05 + i);
+      ctx.fillStyle = 'rgba(255,255,255,' + (0.25 + 0.5 * tw) + ')';
+      ctx.fillRect(sx, sy, 2, 2);
+    }
+    ctx.fillStyle = '#f4f1de';
+    ctx.beginPath();
+    ctx.arc(CANVAS_W - 130, 70, 26, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = th.skyTop;
+    ctx.beginPath();
+    ctx.arc(CANVAS_W - 118, 62, 22, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    /* солнце */
+    const sunLow = levelIndex === 1;
+    ctx.fillStyle = sunLow ? 'rgba(255,170,80,0.95)' : 'rgba(255,240,180,0.95)';
+    ctx.beginPath();
+    ctx.arc(sunLow ? 150 : CANVAS_W - 140, sunLow ? 190 : 80, sunLow ? 42 : 30, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = sunLow ? 'rgba(255,140,60,0.25)' : 'rgba(255,240,180,0.3)';
+    ctx.beginPath();
+    ctx.arc(sunLow ? 150 : CANVAS_W - 140, sunLow ? 190 : 80, sunLow ? 70 : 48, 0, Math.PI * 2);
+    ctx.fill();
+
+    /* облака */
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    const cloudOffset = (cameraX * 0.22) % 600;
+    for (let i = -1; i < 4; i++) {
+      const cx = i * 600 - cloudOffset + 120;
+      drawCloud(cx, 60, 1.0);
+      drawCloud(cx + 320, 110, 0.7);
+    }
+  }
+
+  /* дальние горы/дюны — параллакс 0.25 */
+  ctx.fillStyle = th.hillFar;
+  ctx.globalAlpha = 0.8;
+  const farOff = (cameraX * 0.25) % 700;
+  for (let i = -1; i < 4; i++) {
+    const hx = i * 700 - farOff + 150;
+    ctx.beginPath();
+    ctx.moveTo(hx, GROUND_Y + 40);
+    ctx.lineTo(hx + 160, GROUND_Y - 120);
+    ctx.lineTo(hx + 320, GROUND_Y + 40);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(hx + 220, GROUND_Y + 40);
+    ctx.lineTo(hx + 380, GROUND_Y - 70);
+    ctx.lineTo(hx + 540, GROUND_Y + 40);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  /* средние холмы — параллакс 0.5 */
+  ctx.fillStyle = th.hillMid;
+  ctx.globalAlpha = 0.85;
+  const midOff = (cameraX * 0.5) % 800;
+  for (let i = -1; i < 3; i++) {
+    const hx = i * 800 - midOff + 200;
+    ctx.beginPath();
+    ctx.ellipse(hx, GROUND_Y + 34, 230, 110, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawCloud(x, y, s) {
+  ctx.beginPath();
+  ctx.ellipse(x,          y,          38 * s, 22 * s, 0, 0, Math.PI * 2);
+  ctx.ellipse(x + 34 * s, y - 8 * s,  30 * s, 20 * s, 0, 0, Math.PI * 2);
+  ctx.ellipse(x - 32 * s, y + 2 * s,  26 * s, 18 * s, 0, 0, Math.PI * 2);
+  ctx.ellipse(x + 12 * s, y + 8 * s,  30 * s, 18 * s, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/* ============================================================
+   14. ОТРИСОВКА: МИР
+   ============================================================ */
+
+function drawGroundBlock(x, y, w, h) {
+  const th = level.theme;
+  ctx.fillStyle = th.groundBody;
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = th.groundDark;
+  const stripes = Math.ceil(w / 46);
+  for (let i = 0; i < stripes; i++) {
+    const sx = x + i * 46;
+    if ((i % 2) === 0) ctx.fillRect(sx + 8, y + 30, 14, 8);
+    else               ctx.fillRect(sx + 22, y + 54, 14, 8);
+  }
+  ctx.fillStyle = th.groundTop;
+  ctx.fillRect(x, y - 6, w, 10);
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  for (let i = 0; i < stripes; i++) {
+    const sx = x + i * 46 + 4;
+    ctx.beginPath();
+    ctx.moveTo(sx,     y - 6);
+    ctx.lineTo(sx + 4, y - 14);
+    ctx.lineTo(sx + 8, y - 6);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawPitArea(p) {
+  ctx.fillStyle = '#0c141c';
+  ctx.fillRect(p.x, GROUND_Y, p.w, CANVAS_H - GROUND_Y);
+  ctx.fillStyle = '#243440';
+  for (let i = 0; i < p.w; i += 10) {
+    ctx.beginPath();
+    ctx.moveTo(p.x + i, GROUND_Y);
+    ctx.lineTo(p.x + i + 5, GROUND_Y + 10);
+    ctx.lineTo(p.x + i + 10, GROUND_Y);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawStone(s) {
+  ctx.fillStyle = '#616c75';
+  rr(ctx, s.x, s.y + 4, s.w, s.h - 4, 5); ctx.fill();
+  ctx.fillStyle = '#9aa4ad';
+  rr(ctx, s.x + 2, s.y, s.w - 4, s.h - 6, 5); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(s.x + s.w * 0.35, s.y + s.h * 0.3, s.w * 0.18, s.h * 0.14, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx.beginPath();
+  ctx.ellipse(s.x + s.w * 0.72, s.y + s.h * 0.7, s.w * 0.13, s.h * 0.10, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawTree(s) {
+  const th = level.theme;
+  ctx.fillStyle = th.treeTrunk;
+  rr(ctx, s.x + s.w * 0.32, s.y + s.h * 0.4, s.w * 0.36, s.h * 0.6, 3);
+  ctx.fill();
+  ctx.fillStyle = th.treeLeaf;
+  ctx.beginPath();
+  ctx.arc(s.x + s.w * 0.5,  s.y + s.h * 0.30, s.w * 0.72, 0, Math.PI * 2);
+  ctx.arc(s.x + s.w * 0.15, s.y + s.h * 0.52, s.w * 0.52, 0, Math.PI * 2);
+  ctx.arc(s.x + s.w * 0.85, s.y + s.h * 0.52, s.w * 0.52, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = th.treeLeaf2;
+  ctx.beginPath();
+  ctx.arc(s.x + s.w * 0.42, s.y + s.h * 0.22, s.w * 0.38, 0, Math.PI * 2);
+  ctx.fill();
+  if (level.theme.night) {
+    /* снежные шапки */
+    ctx.fillStyle = 'rgba(232,242,255,0.85)';
+    ctx.beginPath();
+    ctx.arc(s.x + s.w * 0.5, s.y + s.h * 0.30, s.w * 0.42, Math.PI, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawWell(s) {
+  ctx.fillStyle = '#5c6672';
+  rr(ctx, s.x, s.y + 4, s.w, s.h, 6); ctx.fill();
+  ctx.fillStyle = '#8d99a6';
+  rr(ctx, s.x + 2, s.y, s.w - 4, s.h - 4, 6); ctx.fill();
+  ctx.fillStyle = '#243440';
+  ctx.beginPath();
+  ctx.ellipse(s.x + s.w / 2, s.y + 6, s.w * 0.36, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#3b82c4';
+  ctx.beginPath();
+  ctx.ellipse(s.x + s.w / 2, s.y + 6, s.w * 0.28, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y + (s.h / 3) * i);
+    ctx.lineTo(s.x + s.w, s.y + (s.h / 3) * i);
+    ctx.stroke();
+  }
+}
+
+function drawPipe(s) {
+  ctx.fillStyle = '#1b6b2c';
+  rr(ctx, s.x + 3, s.y + 10, s.w - 6, s.h - 10, 4); ctx.fill();
+  ctx.fillStyle = '#2ea043';
+  rr(ctx, s.x, s.y, s.w, 16, 5); ctx.fill();
+  ctx.fillStyle = '#69db7c';
+  rr(ctx, s.x + 5, s.y + 3, 8, s.h - 12, 3); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  rr(ctx, s.x + 8, s.y + 3, 6, 9, 3); ctx.fill();
+  ctx.fillStyle = '#1b6b2c';
+  rr(ctx, s.x + s.w - 14, s.y + 18, 8, s.h - 22, 3); ctx.fill();
+}
+
+function drawCrate(s) {
+  ctx.fillStyle = '#a2703b';
+  rr(ctx, s.x, s.y, s.w, s.h, 4); ctx.fill();
+  ctx.strokeStyle = '#6b4322';
+  ctx.lineWidth = 3;
+  rr(ctx, s.x + 1.5, s.y + 1.5, s.w - 3, s.h - 3, 4); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(s.x + 3, s.y + 3);
+  ctx.lineTo(s.x + s.w - 3, s.y + s.h - 3);
+  ctx.moveTo(s.x + s.w - 3, s.y + 3);
+  ctx.lineTo(s.x + 3, s.y + s.h - 3);
+  ctx.stroke();
+}
+
+function drawBridge(s) {
+  ctx.fillStyle = '#7a5222';
+  rr(ctx, s.x, s.y + 4, s.w, s.h - 4, 3); ctx.fill();
+  ctx.fillStyle = '#b07d3a';
+  rr(ctx, s.x, s.y, s.w, s.h - 4, 3); ctx.fill();
+  ctx.strokeStyle = '#5c3a1a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(s.x, s.y);
+  ctx.lineTo(s.x + s.w, s.y);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i * 18 < s.w; i++) {
+    ctx.beginPath();
+    ctx.moveTo(s.x + i * 18, s.y + 2);
+    ctx.lineTo(s.x + i * 18, s.y + s.h - 6);
+    ctx.stroke();
+  }
+}
+
+function drawOverhead(s) {
+  ctx.fillStyle = '#5c3a1a';
+  rr(ctx, s.x, s.y, s.w, s.h - 4, 6); ctx.fill();
+  ctx.fillStyle = '#8b5a2b';
+  rr(ctx, s.x, s.y, s.w, s.h - 8, 6); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+  ctx.lineWidth = 2;
+  for (let i = 1; i < 4; i++) {
+    ctx.beginPath();
+    ctx.moveTo(s.x + 8, s.y + i * 22);
+    ctx.lineTo(s.x + s.w - 8, s.y + i * 22);
+    ctx.stroke();
+  }
+  ctx.fillStyle = level.theme.treeLeaf;
+  ctx.beginPath();
+  ctx.arc(s.x + s.w * 0.5, s.y + s.h + 4, 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = level.theme.treeLeaf2;
+  ctx.beginPath();
+  ctx.arc(s.x + s.w * 0.32, s.y + s.h + 8, 10, 0, Math.PI * 2);
+  ctx.arc(s.x + s.w * 0.68, s.y + s.h + 8, 10, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = 'bold 14px Segoe UI, Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('▼', s.x + s.w / 2, s.y + s.h - 6);
+  ctx.textAlign = 'left';
+}
+
+function drawPlatform(s) {
+  /* деревянная платформа */
+  if (s.kind === 'platMove' && s.axis === 'y') {
+    ctx.strokeStyle = 'rgba(60,60,70,0.5)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(s.x + s.w / 2, s.y - 200);
+    ctx.lineTo(s.x + s.w / 2, s.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.fillStyle = '#6b4322';
+  rr(ctx, s.x, s.y + 3, s.w, s.h, 4); ctx.fill();
+  ctx.fillStyle = '#b07d3a';
+  rr(ctx, s.x, s.y, s.w, s.h - 2, 4); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i * 18 < s.w; i++) {
+    ctx.beginPath();
+    ctx.moveTo(s.x + i * 18, s.y + 2);
+    ctx.lineTo(s.x + i * 18, s.y + s.h - 3);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#ffd166';
+  ctx.beginPath();
+  ctx.arc(s.x + 5, s.y + s.h / 2, 2, 0, Math.PI * 2);
+  ctx.arc(s.x + s.w - 5, s.y + s.h / 2, 2, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawSpring(s) {
+  const compress = s.anim > 0 ? 0.5 : 1;
+  if (s.anim > 0) s.anim--;
+  const topY = s.y + (1 - compress) * 10;
+  /* основание */
+  ctx.fillStyle = '#44505c';
+  rr(ctx, s.x, s.y + s.h - 4, s.w, 4, 2); ctx.fill();
+  /* пружина-зигзаг */
+  ctx.strokeStyle = '#8d99a6';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  const coils = 3;
+  for (let i = 0; i <= coils; i++) {
+    const yy = s.y + s.h - 4 - (i / coils) * (s.h - 8) * compress;
+    const xx = s.x + (i % 2 === 0 ? 6 : s.w - 6);
+    if (i === 0) ctx.moveTo(s.x + s.w / 2, s.y + s.h - 4);
+    else ctx.lineTo(xx, yy);
+  }
+  ctx.stroke();
+  /* площадка */
+  ctx.fillStyle = '#e03131';
+  rr(ctx, s.x, topY, s.w, 7, 3); ctx.fill();
+  ctx.fillStyle = '#ff9a9a';
+  rr(ctx, s.x + 3, topY + 1, s.w - 6, 2.5, 2); ctx.fill();
+}
+
+function drawCoin(c) {
+  const bobY = Math.sin(c.bob) * 3;
+  const cx = c.x, cy = c.baseY + bobY;
+  const sx = Math.abs(Math.cos(c.spin));
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(Math.max(0.15, sx), 1);
+  ctx.fillStyle = '#b8860b';
+  ctx.beginPath();
+  ctx.arc(0, 0, c.r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffd166';
+  ctx.beginPath();
+  ctx.arc(0, 0, c.r - 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffec99';
+  ctx.beginPath();
+  ctx.arc(0, 0, c.r - 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawPowerup(p) {
+  const bobY = Math.sin(p.bob) * 4;
+  const cx = p.x, cy = p.baseY + bobY;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, 30);
+  glow.addColorStop(0, 'rgba(255,255,200,0.5)');
+  glow.addColorStop(1, 'rgba(255,255,200,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, 30, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (p.kind === 'mushroom') {
+    ctx.fillStyle = '#f7f1e3';
+    rr(ctx, -8, -2, 16, 13, 4); ctx.fill();
+    ctx.fillStyle = '#e03131';
+    ctx.beginPath();
+    ctx.arc(0, -2, 12, Math.PI, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-5, -7, 2.6, 0, Math.PI * 2);
+    ctx.arc(5, -6, 2.2, 0, Math.PI * 2);
+    ctx.arc(0, -10, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  else if (p.kind === 'star') {
+    const pulse = 1 + Math.sin(animClock * 0.15) * 0.08;
+    ctx.scale(pulse, pulse);
+    ctx.rotate(Math.sin(animClock * 0.05) * 0.15);
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const ang = -Math.PI / 2 + i * Math.PI / 5;
+      const rad = i % 2 === 0 ? 14 : 6;
+      const px = Math.cos(ang) * rad, py = Math.sin(ang) * rad;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#b8860b';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath();
+    ctx.arc(-3.5, -1, 1.4, 0, Math.PI * 2);
+    ctx.arc(3.5, -1, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  else if (p.kind === 'magnet') {
+    ctx.rotate(Math.sin(animClock * 0.06) * 0.2);
+    ctx.strokeStyle = '#e03131';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.arc(0, -1, 8, Math.PI, 0, false);
+    ctx.stroke();
+    ctx.strokeStyle = '#e03131';
+    ctx.beginPath();
+    ctx.moveTo(-8, -1); ctx.lineTo(-8, 8);
+    ctx.moveTo(8, -1);  ctx.lineTo(8, 8);
+    ctx.stroke();
+    ctx.strokeStyle = '#f7f1e3';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(-8, 7); ctx.lineTo(-8, 11);
+    ctx.moveTo(8, 7);  ctx.lineTo(8, 11);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawBonus(b) {
+  if (b.taken) return;
+  const bobY = Math.sin(b.bob) * 4;
+  const cx = b.x + b.r;
+  const cy = b.baseY + b.r + bobY;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, b.r * 2.4);
+  glow.addColorStop(0, 'rgba(255,255,180,0.55)');
+  glow.addColorStop(1, 'rgba(255,255,180,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, b.r * 2.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (b.piece.kind === 'apple') {
+    ctx.fillStyle = b.piece.color;
+    ctx.beginPath();
+    ctx.arc(-3, 2, b.r * 0.85, 0, Math.PI * 2);
+    ctx.arc( 3, 2, b.r * 0.85, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#5c3a1a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -b.r * 0.4);
+    ctx.quadraticCurveTo(2, -b.r * 1.0, 6, -b.r * 1.1);
+    ctx.stroke();
+    ctx.fillStyle = b.piece.leaf;
+    ctx.beginPath();
+    ctx.ellipse(8, -b.r * 0.95, 6, 3, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(-5, -2, 3, 2, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  else if (b.piece.kind === 'honey') {
+    ctx.fillStyle = '#8a5a2b';
+    rr(ctx, -b.r, -b.r * 0.2, b.r * 2, b.r * 1.5, 4);
+    ctx.fill();
+    ctx.fillStyle = b.piece.color;
+    rr(ctx, -b.r * 0.9, -b.r * 0.1, b.r * 1.8, b.r * 1.2, 3);
+    ctx.fill();
+    ctx.fillStyle = '#a86f00';
+    rr(ctx, -b.r * 1.05, -b.r * 0.55, b.r * 2.1, b.r * 0.5, 3);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,220,120,0.9)';
+    ctx.beginPath();
+    ctx.ellipse(-b.r * 0.4, -b.r * 0.1, 3, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff3c4';
+    rr(ctx, -b.r * 0.55, b.r * 0.25, b.r * 1.1, b.r * 0.55, 2);
+    ctx.fill();
+  }
+  else {
+    ctx.fillStyle = b.piece.color;
+    ctx.beginPath();
+    ctx.arc(-4, 2, b.r * 0.8, 0, Math.PI * 2);
+    ctx.arc( 5, 3, b.r * 0.75, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#3d7a3d';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-4, -b.r * 0.35);
+    ctx.quadraticCurveTo(0, -b.r * 1.1, 4, -b.r * 1.2);
+    ctx.moveTo( 5, -b.r * 0.35);
+    ctx.quadraticCurveTo(5, -b.r * 1.0, 4, -b.r * 1.2);
+    ctx.stroke();
+    ctx.fillStyle = b.piece.leaf;
+    ctx.beginPath();
+    ctx.ellipse(7, -b.r * 1.1, 6, 3, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.arc(-6, -1, 2.5, 0, Math.PI * 2);
+    ctx.arc(3, 0,  2,   0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function drawEnemy(e) {
+  ctx.save();
+  const cx = e.x + e.w / 2;
+  const bottom = e.y + e.h;
+  ctx.translate(cx, bottom);
+  if (e.dead) ctx.scale(1.25, Math.max(0.15, e.squash) * 0.6);
+  ctx.translate(-cx, -bottom);
+
+  const step = Math.sin(e.phase) * 3;
+
+  /* тело-гриб */
+  ctx.fillStyle = '#6e4520';
+  rr(ctx, e.x + 2, e.y + 6, e.w - 4, e.h - 6, 10); ctx.fill();
+  ctx.fillStyle = '#8a5a2b';
+  rr(ctx, e.x + 4, e.y + 4, e.w - 8, e.h - 8, 10); ctx.fill();
+
+  /* брови — сердитые */
+  ctx.strokeStyle = '#2a1508';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(e.x + 7,  e.y + 10);
+  ctx.lineTo(e.x + 13, e.y + 14);
+  ctx.moveTo(e.x + e.w - 7,  e.y + 10);
+  ctx.lineTo(e.x + e.w - 13, e.y + 14);
+  ctx.stroke();
+
+  /* глаза */
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.ellipse(e.x + 10, e.y + 17, 4, 5, 0, 0, Math.PI * 2);
+  ctx.ellipse(e.x + e.w - 10, e.y + 17, 4, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#1a1a1a';
+  const look = e.vx > 0 ? 1.5 : -1.5;
+  ctx.beginPath();
+  ctx.arc(e.x + 10 + look, e.y + 18, 2, 0, Math.PI * 2);
+  ctx.arc(e.x + e.w - 10 + look, e.y + 18, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* клыки */
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(e.x + 12, e.y + e.h - 12);
+  ctx.lineTo(e.x + 15, e.y + e.h - 6);
+  ctx.lineTo(e.x + 18, e.y + e.h - 12);
+  ctx.closePath();
+  ctx.fill();
+
+  /* лапки */
+  ctx.fillStyle = '#4a2c0a';
+  ctx.beginPath();
+  ctx.ellipse(e.x + 9,  e.y + e.h - 1 + Math.max(0, step),  7, 4, 0, 0, Math.PI * 2);
+  ctx.ellipse(e.x + e.w - 9, e.y + e.h - 1 + Math.max(0, -step), 7, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawFinish() {
+  const fx = level.finishX;
+  const th = level.theme;
+
+  /* замок на финальном уровне */
+  if (levelIndex === LEVELS.length - 1) {
+    ctx.fillStyle = '#5c6672';
+    rr(ctx, fx + 30, GROUND_Y - 150, 170, 150, 6); ctx.fill();
+    ctx.fillStyle = '#8d99a6';
+    rr(ctx, fx + 40, GROUND_Y - 140, 150, 140, 4); ctx.fill();
+    ctx.fillStyle = '#5c6672';
+    rr(ctx, fx + 55, GROUND_Y - 200, 40, 60, 4); ctx.fill();
+    rr(ctx, fx + 135, GROUND_Y - 200, 40, 60, 4); ctx.fill();
+    rr(ctx, fx + 95, GROUND_Y - 230, 40, 90, 4); ctx.fill();
+    ctx.fillStyle = '#243440';
+    rr(ctx, fx + 95, GROUND_Y - 60, 40, 60, 18); ctx.fill();
+    ctx.fillStyle = '#e03131';
+    ctx.beginPath();
+    ctx.moveTo(fx + 115, GROUND_Y - 230);
+    ctx.lineTo(fx + 145, GROUND_Y - 220);
+    ctx.lineTo(fx + 115, GROUND_Y - 210);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /* флагшток */
+  ctx.fillStyle = '#8a8a8a';
+  ctx.fillRect(fx - 3, GROUND_Y - 200, 6, 200);
+  const cell = 12;
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      ctx.fillStyle = ((r + c) % 2 === 0) ? '#ffffff' : '#e03131';
+      ctx.fillRect(fx + 2 + c * cell, GROUND_Y - 196 + r * cell, cell, cell);
+    }
+  }
+  ctx.fillStyle = 'rgba(255,209,102,0.25)';
+  ctx.beginPath();
+  ctx.arc(fx, GROUND_Y - 100, 90, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffd166';
+  ctx.font = 'bold 20px Segoe UI, Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('ФИНИШ', fx + 24, GROUND_Y - 220);
+  ctx.textAlign = 'left';
+}
+
+/* ============================================================
+   15. ОТРИСОВКА: МАРИО
+   ============================================================ */
+
+function drawMarioSprite() {
+  const m = mario;
+  if (!m) return;
+
+  const W = m.w;
+  const H = m.h;
+
+  let state = 'idle';
+  if (!m.onGround)                state = 'jump';
+  else if (m.crouching)           state = 'crouch';
+  else if (Math.abs(m.vx) > 0.35) state = 'walk';
+
+  const cx = m.x + W / 2;
+  const topY = m.y;
+
+  /* аура звезды */
+  if (starT > 0) {
+    const hue = (animClock * 12) % 360;
+    const flicker = starT < 90 && Math.floor(animClock / 4) % 2 === 0 ? 0.25 : 1;
+    ctx.globalAlpha = 0.4 * flicker;
+    ctx.fillStyle = 'hsl(' + hue + ',90%,60%)';
+    ctx.beginPath();
+    ctx.arc(cx, topY + H / 2, W * 1.05, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  /* аура магнита */
+  if (magnetT > 0) {
+    ctx.globalAlpha = 0.14 + 0.06 * Math.sin(animClock * 0.2);
+    ctx.strokeStyle = '#74c0fc';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 8]);
+    ctx.beginPath();
+    ctx.arc(cx, topY + H / 2, MAGNET_RADIUS * 0.55, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+  }
+
+  if (m.onGround) {
+    ctx.fillStyle = 'rgba(0,0,0,0.20)';
+    ctx.beginPath();
+    ctx.ellipse(cx, m.y + m.h + 3, W * 0.55, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.save();
+  ctx.translate(cx, topY);
+  if (m.facing < 0) ctx.scale(-1, 1);
+
+  const capH   = H * 0.22;
+  const faceH  = H * 0.24;
+  const bodyH  = H * 0.26;
+  const legH   = H * 0.28;
+
+  const faceTop = capH * 0.85;
+  const bodyTop = faceTop + faceH;
+  const legTop  = bodyTop + bodyH;
+
+  const walkPhase = Math.sin(m.walkFrame);
+
+  /* --- ноги --- */
+  const legW = W * 0.30;
+  let lx = -W * 0.36;
+  let rx =  W * 0.06;
+  let lLift = 0, rLift = 0;
+
+  if (state === 'walk') {
+    lLift = Math.max(0,  walkPhase) * 6;
+    rLift = Math.max(0, -walkPhase) * 6;
+    lx += walkPhase * 3;
+    rx -= walkPhase * 3;
+  } else if (state === 'jump') {
+    lLift = 3; rLift = -2;
+    lx -= 2;   rx += 3;
+  }
+
+  ctx.fillStyle = COLORS.marioOverall;
+  rr(ctx, lx, legTop - lLift, legW, legH, 3);
+  ctx.fill();
+  ctx.fillStyle = COLORS.marioOverall;
+  rr(ctx, rx, legTop - rLift, legW, legH, 3);
+  ctx.fill();
+
+  ctx.fillStyle = COLORS.marioShoe;
+  rr(ctx, lx - 3, legTop + legH - lLift - 4, legW + 8, 10, 3);
+  ctx.fill();
+  rr(ctx, rx - 2, legTop + legH - rLift - 4, legW + 8, 10, 3);
+  ctx.fill();
+
+  /* --- корпус --- */
+  ctx.fillStyle = COLORS.marioShirt;
+  rr(ctx, -W * 0.46, bodyTop, W * 0.92, bodyH, 5);
+  ctx.fill();
+
+  ctx.fillStyle = COLORS.marioOverall;
+  rr(ctx, -W * 0.48, bodyTop + bodyH * 0.32, W * 0.96, bodyH * 0.95, 5);
+  ctx.fill();
+
+  ctx.fillStyle = COLORS.marioOverall;
+  ctx.fillRect(-W * 0.30, bodyTop + bodyH * 0.05, W * 0.12, bodyH * 0.55);
+  ctx.fillRect( W * 0.18, bodyTop + bodyH * 0.05, W * 0.12, bodyH * 0.55);
+
+  ctx.fillStyle = '#ffd166';
+  ctx.beginPath();
+  ctx.arc(-W * 0.22, bodyTop + bodyH * 0.55, 2.2, 0, Math.PI * 2);
+  ctx.arc( W * 0.22, bodyTop + bodyH * 0.55, 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* --- руки --- */
+  const armW = W * 0.20;
+  const armH = H * 0.22;
+  const armY = bodyTop + bodyH * 0.10;
+
+  let backArmOff  = 0;
+  let frontArmOff = 0;
+  if (state === 'walk') {
+    backArmOff  = -walkPhase * 5;
+    frontArmOff =  walkPhase * 5;
+  } else if (state === 'jump') {
+    backArmOff = -6; frontArmOff = -6;
+  } else if (state === 'crouch') {
+    backArmOff = 4; frontArmOff = 4;
+  }
+
+  ctx.fillStyle = COLORS.marioShirt;
+  rr(ctx, -W * 0.66, armY + backArmOff, armW, armH, 4);
+  ctx.fill();
+  ctx.fillStyle = '#f7f1e3';
+  ctx.beginPath();
+  ctx.arc(-W * 0.56, armY + backArmOff + armH + 2, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = COLORS.marioShirt;
+  rr(ctx, W * 0.46, armY + frontArmOff, armW, armH, 4);
+  ctx.fill();
+  ctx.fillStyle = '#f7f1e3';
+  ctx.beginPath();
+  ctx.arc(W * 0.56, armY + frontArmOff + armH + 2, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* --- голова --- */
+  ctx.fillStyle = COLORS.marioSkin;
+  ctx.beginPath();
+  ctx.ellipse(0, faceTop + faceH * 0.5, W * 0.48, faceH * 0.55, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = COLORS.marioSkin;
+  ctx.beginPath();
+  ctx.ellipse(-W * 0.40, faceTop + faceH * 0.5, 4, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = COLORS.marioHair;
+  ctx.beginPath();
+  ctx.ellipse(-W * 0.30, faceTop + faceH * 0.45, 6, 8, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.ellipse(W * 0.14, faceTop + faceH * 0.42, 4.2, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#1a1a1a';
+  ctx.beginPath();
+  ctx.arc(W * 0.17, faceTop + faceH * 0.44, 2.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = COLORS.marioSkin;
+  ctx.beginPath();
+  ctx.ellipse(W * 0.34, faceTop + faceH * 0.62, 5.5, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = COLORS.marioHair;
+  ctx.beginPath();
+  ctx.ellipse(W * 0.12, faceTop + faceH * 0.82, W * 0.34, faceH * 0.14, 0.05, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(-W * 0.22, faceTop + faceH * 0.80, W * 0.22, faceH * 0.12, -0.1, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* --- кепка --- */
+  ctx.fillStyle = COLORS.marioCap;
+  ctx.beginPath();
+  ctx.ellipse(0, faceTop + capH * 0.10, W * 0.55, capH * 0.62, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = COLORS.marioCap;
+  rr(ctx, W * 0.05, faceTop - capH * 0.05, W * 0.72, capH * 0.42, 4);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold ' + Math.round(capH * 0.62) + 'px Segoe UI, Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('M', W * 0.02, faceTop + capH * 0.05);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.beginPath();
+  ctx.ellipse(-W * 0.15, faceTop + capH * 0.02, W * 0.20, capH * 0.18, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/* ============================================================
+   16. ОТРИСОВКА: ЧАСТИЦЫ, ПОДСКАЗКИ, СБОРКА КАДРА
+   ============================================================ */
+
+function updateAndDrawParticles(dt60) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.life += dt60;
+    p.x += p.vx * dt60;
+    p.y += p.vy * dt60;
+    p.vy += p.g * dt60;
+    if (p.life >= p.maxLife) { particles.splice(i, 1); continue; }
+    ctx.globalAlpha = 1 - p.life / p.maxLife;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawPopups(dt60) {
+  ctx.font = 'bold 14px Segoe UI, Arial';
+  ctx.textAlign = 'center';
+  for (let i = popups.length - 1; i >= 0; i--) {
+    const p = popups[i];
+    p.t += dt60;
+    if (p.t > 55) { popups.splice(i, 1); continue; }
+    ctx.globalAlpha = Math.max(0, 1 - p.t / 55);
+    ctx.fillStyle = p.color;
+    ctx.fillText(p.text, p.x, p.y - p.t * 0.8);
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'left';
+}
+
+function updateSnow(dt60) {
+  if (!level || !level.theme.snow) return;
+  if (!snow.length) {
+    for (let i = 0; i < 70; i++) {
+      snow.push({ x: Math.random() * CANVAS_W, y: Math.random() * CANVAS_H,
+                  spd: rand(0.4, 1.2), drift: rand(-0.3, 0.3), size: rand(1, 2.6) });
+    }
+  }
+  for (const f of snow) {
+    f.y += f.spd * dt60;
+    f.x += (f.drift + Math.sin(animClock * 0.02 + f.y * 0.02) * 0.3) * dt60;
+    if (f.y > CANVAS_H) { f.y = -4; f.x = Math.random() * CANVAS_W; }
+    if (f.x < 0) f.x = CANVAS_W;
+    if (f.x > CANVAS_W) f.x = 0;
+  }
+}
+
+function drawSnow() {
+  if (!level || !level.theme.snow) return;
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  for (const f of snow) {
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function render(dt60) {
+  ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+  drawSky();
+
+  /* тряска экрана */
+  let shx = 0, shy = 0;
+  if (shakeT > 0) {
+    shakeT -= dt60;
+    const k = Math.max(0, shakeT) / 20 * shakeMag;
+    shx = (Math.random() - 0.5) * 2 * k;
+    shy = (Math.random() - 0.5) * 2 * k;
+  }
+
+  ctx.save();
+  ctx.translate(-cameraX + shx, shy);
+
+  if (level) {
+    for (const p of level.pits) {
+      if (p.x + p.w < cameraX - 40 || p.x > cameraX + CANVAS_W + 40) continue;
+      drawPitArea(p);
+    }
+
+    for (const s of level.solids) {
+      if (s.x + s.w < cameraX - 60 || s.x > cameraX + CANVAS_W + 60) continue;
+      if (s.kind === 'ground')        drawGroundBlock(s.x, s.y, s.w, s.h);
+      else if (s.kind === 'stone')    drawStone(s);
+      else if (s.kind === 'tree')     drawTree(s);
+      else if (s.kind === 'well')     drawWell(s);
+      else if (s.kind === 'pipe')     drawPipe(s);
+      else if (s.kind === 'crate')    drawCrate(s);
+      else if (s.kind === 'bridge')   drawBridge(s);
+      else if (s.kind === 'overhead') drawOverhead(s);
+      else if (s.kind === 'platFloat' || s.kind === 'platMove') drawPlatform(s);
+      else if (s.kind === 'spring')   drawSpring(s);
+    }
+
+    drawFinish();
+
+    for (const c of level.coins) {
+      if (c.taken) continue;
+      if (c.x + 20 < cameraX - 40 || c.x > cameraX + CANVAS_W + 40) continue;
+      drawCoin(c);
+    }
+
+    for (const b of level.bonuses) {
+      if (b.taken) continue;
+      if (b.x + b.r * 2 < cameraX - 40 || b.x > cameraX + CANVAS_W + 40) continue;
+      drawBonus(b);
+    }
+
+    for (const p of level.powerups) {
+      if (p.taken) continue;
+      if (p.x + 30 < cameraX - 40 || p.x > cameraX + CANVAS_W + 40) continue;
+      drawPowerup(p);
+    }
+
+    for (const e of level.enemies) {
+      if (e.x + e.w < cameraX - 60 || e.x > cameraX + CANVAS_W + 60) continue;
+      drawEnemy(e);
+    }
+
+    drawMarioSprite();
+  }
+
+  updateAndDrawParticles(dt60);
+  drawPopups(dt60);
+
+  ctx.restore();
+
+  drawSnow();
+
+  /* индикаторы эффектов */
+  if (gameState === 'playing') {
+    if (starT > 0) {
+      const w = 120 * Math.min(1, starT / STAR_FRAMES);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      rr(ctx, CANVAS_W - 160, 46, 130, 20, 8); ctx.fill();
+      ctx.fillStyle = '#ffd166';
+      rr(ctx, CANVAS_W - 155, 51, Math.max(0, w), 10, 5); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px Segoe UI, Arial';
+      ctx.fillText('⭐', CANVAS_W - 176, 60);
+    }
+    if (magnetT > 0) {
+      const w = 120 * Math.min(1, magnetT / MAGNET_FRAMES);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      rr(ctx, CANVAS_W - 160, 72, 130, 20, 8); ctx.fill();
+      ctx.fillStyle = '#74c0fc';
+      rr(ctx, CANVAS_W - 155, 77, Math.max(0, w), 10, 5); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px Segoe UI, Arial';
+      ctx.fillText('🧲', CANVAS_W - 176, 86);
+    }
+  }
+
+  /* верхний баннер */
+  if (playerName) {
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    rr(ctx, 12, 12, 300, 34, 8); ctx.fill();
+    ctx.fillStyle = '#ffd166';
+    ctx.font = 'bold 16px Segoe UI, Arial';
+    ctx.fillText('Игрок: ' + playerName + ' · ур. ' + (levelIndex + 1), 24, 34);
+  }
+
+  /* временное сообщение */
+  if (performance.now() < toast.until && toast.text) {
+    const alpha = Math.min(1, (toast.until - performance.now()) / 500);
+    ctx.globalAlpha = alpha;
+    ctx.font = 'bold 18px Segoe UI, Arial';
+    const tw = ctx.measureText(toast.text).width + 40;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    rr(ctx, CANVAS_W / 2 - tw / 2, 70, tw, 40, 10); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.fillText(toast.text, CANVAS_W / 2, 96);
+    ctx.textAlign = 'left';
+    ctx.globalAlpha = 1;
+  }
+
+  /* пауза */
+  if (paused && gameState === 'paused' && gameActive) {
+    ctx.fillStyle = 'rgba(0,0,0,0.42)';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 46px Segoe UI, Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('ПАУЗА', CANVAS_W / 2, CANVAS_H / 2 - 6);
+    ctx.font = '16px Segoe UI, Arial';
+    ctx.fillStyle = '#ffd166';
+    ctx.fillText('Пробел или кнопка «Старт/Пауза» — продолжить', CANVAS_W / 2, CANVAS_H / 2 + 30);
+    ctx.textAlign = 'left';
+  }
+}
+
+/* ============================================================
+   17. ГЛАВНЫЙ ЦИКЛ
+   ============================================================ */
+
+function frame(now) {
+  rafId = requestAnimationFrame(frame);
+
+  if (!lastTime) lastTime = now;
+  let dt = now - lastTime;
+  lastTime = now;
+  if (dt > 60) dt = 60;
+  const dt60 = dt / 16.667;
+
+  animClock += dt60;
+
+  /* анимация покачивания — даже на паузе */
+  if (level) {
+    for (const b of level.bonuses) b.bob += 0.06 * dt60;
+    for (const c of level.coins)  { c.bob += 0.06 * dt60; c.spin += 0.12 * dt60; }
+    for (const p of level.powerups) p.bob += 0.07 * dt60;
+  }
+
+  if (gameActive && !paused && gameState === 'playing') {
+    update(dt60);
+  }
+
+  updateSnow(dt60);
+  render(dt60);
+}
+
+/* ============================================================
+   18. УПРАВЛЕНИЕ
+   ============================================================ */
+
+function togglePause() {
+  if (gameState !== 'playing' && gameState !== 'paused') return;
+  if (paused) {
+    paused = false;
+    gameState = 'playing';
+    startMusic();
+    setStatus('Игра продолжается.');
+  } else {
+    paused = true;
+    gameState = 'paused';
+    stopMusic();
+    setStatus('Пауза. Пробел — продолжить.');
+  }
+}
+
+function restartGame() {
+  if (gameState === 'awaitName' && !playerName) return;
+  setToast('Рестарт!', 1200);
+  newGame();
+}
+
+window.addEventListener('keydown', function (e) {
+  const k = e.key;
+  if (k === ' ') {
+    e.preventDefault();
+    if (!modalOpen()) togglePause();
+    else {
+      const btn = modalBody.querySelector('button');
+      if (btn) btn.click();
+    }
+  }
+  else if (k === 'ArrowLeft')  { e.preventDefault(); keys.left = true;  }
+  else if (k === 'ArrowRight') { e.preventDefault(); keys.right = true; }
+  else if (k === 'ArrowUp')    { e.preventDefault(); keys.up = true;    }
+  else if (k === 'ArrowDown')  { e.preventDefault(); keys.down = true;  }
+  else if (k === 'Escape')     { e.preventDefault(); restartGame();     }
+  else if (k === 'm' || k === 'M' || k === 'ь' || k === 'Ь') { toggleMute(); }
+}, { passive: false });
+
+window.addEventListener('keyup', function (e) {
+  const k = e.key;
+  if (k === 'ArrowLeft')  keys.left = false;
+  else if (k === 'ArrowRight') keys.right = false;
+  else if (k === 'ArrowUp')    keys.up = false;
+  else if (k === 'ArrowDown')  keys.down = false;
+});
+
+function bindHoldButton(el, keyName) {
+  function press(e) {
+    e.preventDefault();
+    keys[keyName] = true;
+    el.classList.add('pressed');
+  }
+  function release(e) {
+    if (e) e.preventDefault();
+    keys[keyName] = false;
+    el.classList.remove('pressed');
+  }
+  el.addEventListener('pointerdown', press);
+  el.addEventListener('pointerup', release);
+  el.addEventListener('pointerleave', release);
+  el.addEventListener('pointercancel', release);
+  el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+}
+
+bindHoldButton(document.getElementById('btnLeft'),  'left');
+bindHoldButton(document.getElementById('btnRight'), 'right');
+bindHoldButton(document.getElementById('btnUp'),    'up');
+bindHoldButton(document.getElementById('btnDown'),  'down');
+
+document.getElementById('btnStart').addEventListener('click', function () {
+  if (!modalOpen()) togglePause();
+});
+document.getElementById('btnRestart').addEventListener('click', function () {
+  restartGame();
+});
+btnMuteEl.addEventListener('click', toggleMute);
+
+/* ============================================================
+   19. СТАРТОВОЕ МОДАЛЬНОЕ ОКНО
+   ============================================================ */
+
+function openNameModal() {
+  openModal(
+    '<h2>🍄 Супер Марио — OMP Edition!</h2>' +
+    '<p>Введите имя игрока — результат сохранится в таблице лучших.</p>' +
+    '<input id="nameInput" maxlength="20" placeholder="Имя игрока" value="' +
+      escapeHtml(lastPlayerName) + '" autocomplete="off">' +
+    '<p style="margin-top:16px"><b>Что нового в этой версии:</b></p>' +
+    '<p style="font-size:13px;line-height:1.55">' +
+      '🗺️ Три уровня: холмы → пустыня → снежная ночь<br>' +
+      '😠 Враги-гумбы — прыгай сверху (+5 очков)<br>' +
+      '⭐ Звезда-неуязвимость, 🍄 гриб +жизнь, 🧲 магнит бонусов<br>' +
+      '👟 Батуты, движущиеся платформы, монеты<br>' +
+      '🔥 Комбо-множитель ×2…×5 за серию бонусов<br>' +
+      '🎵 Звуки и музыка (клавиша M — вкл/выкл)<br>' +
+      '🦘 Держи «вверх» дольше — прыжок выше' +
+    '</p>' +
+    '<div class="two-cols" style="margin-top:14px">' +
+      '<div>' +
+        '<h3>🏆 Таблица лучших</h3>' +
+        '<table><thead><tr><th>#</th><th>Игрок</th><th>Счёт</th></tr></thead>' +
+        '<tbody>' + tableRowsHtml() + '</tbody></table>' +
+      '</div>' +
+      '<div>' +
+        '<h3>🕒 Последние 10 игр</h3>' +
+        '<ul class="recent">' + recentRowsHtml() + '</ul>' +
+      '</div>' +
+    '</div>' +
+    '<div class="modal-actions">' +
+      '<button id="btnNameGo">Играть</button>' +
+    '</div>'
+  );
+
+  const input = document.getElementById('nameInput');
+  setTimeout(function () { input.focus(); input.select(); }, 40);
+
+  function submit() {
+    const name = (input.value || '').trim() || 'Игрок';
+    playerName = name;
+    lastPlayerName = name;
+    saveStorage();
+    closeModal();
+    updateHud();
+    newGame();
+    setStatus('Стрелки — бег и прыжок, ↓ — присесть, Esc — рестарт, M — звук.');
+  }
+
+  document.getElementById('btnNameGo').addEventListener('click', submit);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') submit();
+  });
+}
+
+/* ============================================================
+   20. ИНИЦИАЛИЗАЦИЯ
+   ============================================================ */
+
+function init() {
+  loadStorage();
+  renderTable();
+  renderRecent();
+
+  mario = null;
+  level = null;
+
+  updateHud();
+  setStatus('Введите имя игрока…');
+  gameState = 'awaitName';
+
+  if (rafId === null) {
+    rafId = requestAnimationFrame(frame);
+  }
+
+  openNameModal();
+}
+
+init();
+
+/* Пауза при потере фокуса */
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden && gameActive && !paused && gameState === 'playing') {
+    paused = true;
+    gameState = 'paused';
+    stopMusic();
+    setStatus('Пауза (вкладка неактивна).');
+  }
+});
+</script>
+</body>
+</html>

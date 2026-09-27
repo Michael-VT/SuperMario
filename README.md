@@ -9,7 +9,9 @@ An experimental Super Mario–style platformer packed into a **single HTML file*
 ## ▶️ How to Play
 
 1. Download or clone this repository.
-2. Open `SuperMarioDeepSeek.html` in any modern browser (Chrome, Firefox, Safari, Edge).
+2. Open one of the two game files in any modern browser (Chrome, Firefox, Safari, Edge):
+   — `SuperMarioDeepSeek.html` — the original experiment;
+   — `SuperMarioOMP.html` — the extended OMP Edition (see "Game Variants").
 3. Enter your player name — and go!
 
 No server, no installation, no dependencies.
@@ -52,9 +54,14 @@ Movement is inertia-based: Mario accelerates while you hold a direction, brakes 
 - Persistence via `localStorage`.
 - Bonus sprites are drawn programmatically — no image assets.
 
-## 🗺️ Roadmap
+## 📦 Game Variants
 
-This is the first experiment. The plan is to try creating **a couple more variants** of the game based on this codebase.
+| File | Description |
+|---|---|
+| `SuperMarioDeepSeek.html` | The original experiment: one generated run, bonuses, lives, top-10 leaderboard. |
+| `SuperMarioOMP.html` | **OMP Edition** — 3 themed levels (green hills → sunset desert → snowy night), stompable goomba enemies, coins, power-ups (⭐ invincibility star, 🍄 extra-life mushroom, 🧲 bonus magnet), springs, moving platforms, a ×2…×5 combo multiplier, sounds and chiptune music (Web Audio), parallax backgrounds, particles and screen shake. Keeps its own leaderboard. |
+
+More variants of the game are still planned.
 
 ## ⚖️ License
 

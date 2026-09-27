@@ -9,7 +9,9 @@ Um jogo de plataforma experimental no estilo Super Mario, reunido em **um único
 ## ▶️ Como jogar
 
 1. Baixe ou clone este repositório.
-2. Abra `SuperMarioDeepSeek.html` em qualquer navegador moderno (Chrome, Firefox, Safari, Edge).
+2. Abra um dos dois arquivos do jogo em qualquer navegador moderno (Chrome, Firefox, Safari, Edge):
+   — `SuperMarioDeepSeek.html` — o experimento original;
+   — `SuperMarioOMP.html` — a edição estendida OMP Edition (veja "Variantes do jogo").
 3. Digite o nome do jogador — e vamos lá!
 
 Sem servidor, sem instalação, sem dependências.
@@ -52,9 +54,14 @@ O movimento tem inércia: o Mario acelera enquanto você segura a direção e fr
 - Persistência via `localStorage`.
 - Os sprites dos bônus são desenhados por código — sem imagens.
 
-## 🗺️ Roadmap
+## 📦 Variantes do jogo
 
-Este é o primeiro experimento. O plano é tentar criar **mais algumas variantes** do jogo com base nesta base de código.
+| Arquivo | Descrição |
+|---|---|
+| `SuperMarioDeepSeek.html` | O experimento original: uma corrida gerada, bônus, vidas, ranking top 10. |
+| `SuperMarioOMP.html` | **OMP Edition** — 3 fases temáticas (colinas verdes → deserto ao pôr do sol → noite com neve), inimigos goombas para pisar, moedas, power-ups (⭐ estrela de invencibilidade, 🍄 cogumelo de vida extra, 🧲 ímã de bônus), molas, plataformas móveis, multiplicador de combo ×2…×5, sons e música chiptune (Web Audio), cenários em parallax, partículas e tremor de tela. Ranking próprio. |
+
+Mais variantes do jogo ainda estão planejadas.
 
 ## ⚖️ Licença
 

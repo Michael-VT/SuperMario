@@ -9,7 +9,9 @@ Ein experimentelles Jump-’n’-Run im Stil von Super Mario, gepackt in **eine 
 ## ▶️ So spielen Sie
 
 1. Laden Sie dieses Repository herunter oder klonen Sie es.
-2. Öffnen Sie `SuperMarioDeepSeek.html` in einem modernen Browser (Chrome, Firefox, Safari, Edge).
+2. Öffnen Sie eine der beiden Spieldateien in einem modernen Browser (Chrome, Firefox, Safari, Edge):
+   — `SuperMarioDeepSeek.html` — das originale Experiment;
+   — `SuperMarioOMP.html` — die erweiterte OMP Edition (siehe „Spielvarianten“).
 3. Geben Sie Ihren Spielernamen ein — und los!
 
 Kein Server, keine Installation, keine Abhängigkeiten.
@@ -52,9 +54,14 @@ Die Bewegung erfolgt mit Trägheit: Mario beschleunigt, solange man eine Richtun
 - Speicherung über `localStorage`.
 - Bonus-Sprites werden programmatisch gezeichnet — keine Bilddateien.
 
-## 🗺️ Fahrplan
+## 📦 Spielvarianten
 
-Dies ist das erste Experiment. Geplant ist, auf Basis dieser Codebasis **noch ein paar Spielvarianten** zu erstellen.
+| Datei | Beschreibung |
+|---|---|
+| `SuperMarioDeepSeek.html` | Das originale Experiment: ein generierter Lauf, Boni, Leben, Top-10-Bestenliste. |
+| `SuperMarioOMP.html` | **OMP Edition** — 3 Level mit Themen (grüne Hügel → Sonnenuntergangs-Wüste → verschneite Nacht), bespringbare Gumba-Gegner, Münzen, Power-Ups (⭐ Unverwundbarkeitsstern, 🍄 Extra-Leben-Pilz, 🧲 Bonus-Magnet), Sprungfedern, bewegliche Plattformen, ×2…×5-Kombo-Multiplikator, Sounds und Chiptune-Musik (Web Audio), Parallax-Hintergründe, Partikel und Bildschirmwackeln. Eigene Bestenliste. |
+
+Weitere Spielvarianten sind weiter geplant.
 
 ## ⚖️ Lizenz
 

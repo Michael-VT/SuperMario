@@ -11,7 +11,7 @@ Experimental Super Mario–style platformers packed into **single HTML files** a
 1. Download or clone this repository.
 2. Open one of the two game files in any modern browser (Chrome, Firefox, Safari, Edge):
    — `SuperMarioDeepSeek.html` — the original experiment;
-   — `SuperMarioOMP.html` — the extended OMP Edition (see "Game Variants").
+   — `SuperMarioOMP.html` — the extended OMP_GLM-5.3 Edition (see "Game Variants").
 3. Enter your player name — and go!
 
 No server, no installation, no dependencies.

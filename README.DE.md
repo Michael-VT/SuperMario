@@ -11,7 +11,7 @@ Experimentelle Jump-’n’-Runs im Stil von Super Mario, jeweils in **einer ein
 1. Laden Sie dieses Repository herunter oder klonen Sie es.
 2. Öffnen Sie eine der beiden Spieldateien in einem modernen Browser (Chrome, Firefox, Safari, Edge):
    — `SuperMarioDeepSeek.html` — das originale Experiment;
-   — `SuperMarioOMP.html` — die erweiterte OMP Edition (siehe „Spielvarianten“).
+   — `SuperMarioOMP.html` — die erweiterte OMP_GLM-5.3 Edition (siehe „Spielvarianten“).
 3. Geben Sie Ihren Spielernamen ein — und los!
 
 Kein Server, keine Installation, keine Abhängigkeiten.

@@ -11,7 +11,7 @@ Jogos de plataforma experimentais no estilo Super Mario, cada um em **um único 
 1. Baixe ou clone este repositório.
 2. Abra um dos dois arquivos do jogo em qualquer navegador moderno (Chrome, Firefox, Safari, Edge):
    — `SuperMarioDeepSeek.html` — o experimento original;
-   — `SuperMarioOMP.html` — a edição estendida OMP Edition (veja "Variantes do jogo").
+   — `SuperMarioOMP.html` — a edição estendida OMP_GLM-5.3 Edition (veja "Variantes do jogo").
 3. Digite o nome do jogador — e vamos lá!
 
 Sem servidor, sem instalação, sem dependências.

@@ -1,10 +1,10 @@
-# 🍄 Super Mario — DeepSeek Edition
+# 🍄 Super Mario — DeepSeek & OMP_GLM-5.3 Editions
 
 **English** | [Українська](README.UA.md) | [Русский](README.RU.md) | [Deutsch](README.DE.md) | [Français](README.FR.md) | [Português](README.PT.md)
 
-An experimental Super Mario–style platformer packed into a **single HTML file**, created together with the **DeepSeek** AI chat. No frameworks, no build step — just open the file in a browser and play.
+Experimental Super Mario–style platformers packed into **single HTML files** and built with AI: the original **DeepSeek Edition** — in a chat with the **DeepSeek** AI; the extended **OMP_GLM-5.3 Edition** — with **GLM-5.3** (the omp coding assistant). No frameworks, no build step — just open a file in a browser and play.
 
-> 🤖 **Experiment notice:** the entire game (HTML + CSS + JavaScript, ~1,770 lines) was generated through a conversation with DeepSeek and then refined. It is published as an example of AI-assisted game development. The full chat log (`log.txt`) stays out of the repository.
+> 🤖 **Experiment notice:** the entire original game (HTML + CSS + JavaScript, ~1,770 lines) was generated through a conversation with DeepSeek and then refined. The OMP_GLM-5.3 Edition was, in turn, written with the GLM-5.3 model (omp assistant). Both are published as examples of AI-assisted game development. The full DeepSeek chat log (`log.txt`) stays out of the repository.
 
 ## ▶️ How to Play
 
@@ -58,8 +58,8 @@ Movement is inertia-based: Mario accelerates while you hold a direction, brakes 
 
 | File | Description |
 |---|---|
-| `SuperMarioDeepSeek.html` | The original experiment: one generated run, bonuses, lives, top-10 leaderboard. |
-| `SuperMarioOMP.html` | **OMP Edition** — 3 themed levels (green hills → sunset desert → snowy night), stompable goomba enemies, coins, power-ups (⭐ invincibility star, 🍄 extra-life mushroom, 🧲 bonus magnet), springs, moving platforms, a ×2…×5 combo multiplier, sounds and chiptune music (Web Audio), parallax backgrounds, particles and screen shake. Keeps its own leaderboard. |
+| `SuperMarioDeepSeek.html` | **DeepSeek Edition** — the original experiment: one generated run, bonuses, lives, top-10 leaderboard. |
+| `SuperMarioOMP.html` | **OMP_GLM-5.3 Edition** — 3 themed levels (green hills → sunset desert → snowy night), stompable goomba enemies, coins, power-ups (⭐ invincibility star, 🍄 extra-life mushroom, 🧲 bonus magnet), springs, moving platforms, a ×2…×5 combo multiplier, sounds and chiptune music (Web Audio), parallax backgrounds, particles and screen shake. Keeps its own leaderboard. |
 
 More variants of the game are still planned.
 

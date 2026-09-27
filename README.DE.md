@@ -1,10 +1,10 @@
-# 🍄 Super Mario — DeepSeek Edition
+# 🍄 Super Mario — DeepSeek & OMP_GLM-5.3 Editions
 
 [English](README.md) | [Українська](README.UA.md) | [Русский](README.RU.md) | **Deutsch** | [Français](README.FR.md) | [Português](README.PT.md)
 
-Ein experimentelles Jump-’n’-Run im Stil von Super Mario, gepackt in **eine einzige HTML-Datei**, gemeinsam mit dem **DeepSeek**-KI-Chat erstellt. Keine Frameworks, kein Build-Schritt — einfach die Datei im Browser öffnen und losspielen.
+Experimentelle Jump-’n’-Runs im Stil von Super Mario, jeweils in **einer einzigen HTML-Datei** und mit KI erstellt: das originale **DeepSeek Edition** — in einem Chat mit **DeepSeek**; die erweiterte **OMP_GLM-5.3 Edition** — mit **GLM-5.3** (dem Coding-Assistenten omp). Keine Frameworks, kein Build-Schritt — einfach die Datei im Browser öffnen und losspielen.
 
-> 🤖 **Hinweis zum Experiment:** Das gesamte Spiel (HTML + CSS + JavaScript, ca. 1.770 Zeilen) wurde in einem Dialog mit DeepSeek generiert und anschließend verfeinert. Es wird als Beispiel für KI-gestützte Spieleentwicklung veröffentlicht. Das vollständige Chat-Protokoll (`log.txt`) bleibt außerhalb des Repositorys.
+> 🤖 **Hinweis zum Experiment:** Das gesamte ursprüngliche Spiel (HTML + CSS + JavaScript, ca. 1.770 Zeilen) wurde in einem Dialog mit DeepSeek generiert und anschließend verfeinert. Die OMP_GLM-5.3 Edition wurde ihrerseits mit dem Modell GLM-5.3 (Assistant omp) geschrieben. Beide werden als Beispiele KI-gestützter Spieleentwicklung veröffentlicht. Das vollständige DeepSeek-Chat-Protokoll (`log.txt`) bleibt außerhalb des Repositorys.
 
 ## ▶️ So spielen Sie
 
@@ -58,8 +58,8 @@ Die Bewegung erfolgt mit Trägheit: Mario beschleunigt, solange man eine Richtun
 
 | Datei | Beschreibung |
 |---|---|
-| `SuperMarioDeepSeek.html` | Das originale Experiment: ein generierter Lauf, Boni, Leben, Top-10-Bestenliste. |
-| `SuperMarioOMP.html` | **OMP Edition** — 3 Level mit Themen (grüne Hügel → Sonnenuntergangs-Wüste → verschneite Nacht), bespringbare Gumba-Gegner, Münzen, Power-Ups (⭐ Unverwundbarkeitsstern, 🍄 Extra-Leben-Pilz, 🧲 Bonus-Magnet), Sprungfedern, bewegliche Plattformen, ×2…×5-Kombo-Multiplikator, Sounds und Chiptune-Musik (Web Audio), Parallax-Hintergründe, Partikel und Bildschirmwackeln. Eigene Bestenliste. |
+| `SuperMarioDeepSeek.html` | **DeepSeek Edition** — das originale Experiment: ein generierter Lauf, Boni, Leben, Top-10-Bestenliste. |
+| `SuperMarioOMP.html` | **OMP_GLM-5.3 Edition** — 3 Level mit Themen (grüne Hügel → Sonnenuntergangs-Wüste → verschneite Nacht), bespringbare Gumba-Gegner, Münzen, Power-Ups (⭐ Unverwundbarkeitsstern, 🍄 Extra-Leben-Pilz, 🧲 Bonus-Magnet), Sprungfedern, bewegliche Plattformen, ×2…×5-Kombo-Multiplikator, Sounds und Chiptune-Musik (Web Audio), Parallax-Hintergründe, Partikel und Bildschirmwackeln. Eigene Bestenliste. |
 
 Weitere Spielvarianten sind weiter geplant.
 

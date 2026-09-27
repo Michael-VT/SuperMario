@@ -1,10 +1,10 @@
-# 🍄 Super Mario — Édition DeepSeek
+# 🍄 Super Mario — DeepSeek & OMP_GLM-5.3 Editions
 
 [English](README.md) | [Українська](README.UA.md) | [Русский](README.RU.md) | [Deutsch](README.DE.md) | **Français** | [Português](README.PT.md)
 
-Un jeu de plateforme expérimental dans le style de Super Mario, tenu dans **un seul fichier HTML**, créé avec le chat IA **DeepSeek**. Pas de framework, pas de compilation — ouvrez simplement le fichier dans un navigateur et jouez.
+Des jeux de plateforme expérimentaux dans le style de Super Mario, chacun dans **un seul fichier HTML** et créés avec l'IA : l'original **DeepSeek Edition** — dans une conversation avec **DeepSeek** ; l'étendue **OMP_GLM-5.3 Edition** — avec **GLM-5.3** (l'assistant de programmation omp). Pas de framework, pas de compilation — ouvrez simplement le fichier dans un navigateur et jouez.
 
-> 🤖 **À propos de l'expérience :** le jeu entier (HTML + CSS + JavaScript, ~1 770 lignes) a été généré lors d'une conversation avec DeepSeek, puis affiné. Il est publié comme exemple de développement de jeux assisté par IA. Le journal complet de la conversation (`log.txt`) reste hors du dépôt.
+> 🤖 **À propos de l'expérience :** le jeu original entier (HTML + CSS + JavaScript, ~1 770 lignes) a été généré lors d'une conversation avec DeepSeek, puis affiné. L'édition OMP_GLM-5.3 a quant à elle été écrite avec le modèle GLM-5.3 (assistant omp). Les deux sont publiées comme exemples de développement de jeux assisté par IA. Le journal complet de la conversation avec DeepSeek (`log.txt`) reste hors du dépôt.
 
 ## ▶️ Comment jouer
 
@@ -58,8 +58,8 @@ Le déplacement est à inertie : Mario accélère tant que vous maintenez la dir
 
 | Fichier | Description |
 |---|---|
-| `SuperMarioDeepSeek.html` | L'expérience originale : une manche générée, des bonus, des vies, un classement top 10. |
-| `SuperMarioOMP.html` | **OMP Edition** — 3 niveaux thématiques (collines vertes → désert au coucher du soleil → nuit enneigée), ennemis goombas à écraser, pièces, power-ups (⭐ étoile d'invincibilité, 🍄 champignon vie supplémentaire, 🧲 aimant à bonus), trampolines, plateformes mobiles, multiplicateur de combo ×2…×5, sons et musique chiptune (Web Audio), fonds en parallaxe, particules et tremblement d'écran. Classement séparé. |
+| `SuperMarioDeepSeek.html` | **DeepSeek Edition** — l'expérience originale : une manche générée, des bonus, des vies, un classement top 10. |
+| `SuperMarioOMP.html` | **OMP_GLM-5.3 Edition** — 3 niveaux thématiques (collines vertes → désert au coucher du soleil → nuit enneigée), ennemis goombas à écraser, pièces, power-ups (⭐ étoile d'invincibilité, 🍄 champignon vie supplémentaire, 🧲 aimant à bonus), trampolines, plateformes mobiles, multiplicateur de combo ×2…×5, sons et musique chiptune (Web Audio), fonds en parallaxe, particules et tremblement d'écran. Classement séparé. |
 
 D'autres variantes du jeu sont toujours prévues.
 
